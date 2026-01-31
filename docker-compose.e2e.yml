@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:14-alpine
+    container_name: infisical-db-e2e
+    environment:
+      POSTGRES_USER: infisical
+      POSTGRES_PASSWORD: infisical
+      POSTGRES_DB: infisical
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - infisical
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U infisical"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:alpine
+    container_name: infisical-redis-e2e
+    environment:
+      ALLOW_EMPTY_PASSWORD: yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - infisical
+
+  infisical:
+    image: infisical/infisical:latest
+    container_name: infisical-backend-e2e
+    ports:
+      - "8888:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      ENCRYPTION_KEY: f40c297b306a1ac7803e0e16daf8b03e
+      AUTH_SECRET: YTVlMTM2ODNiODQ4ZjI4ZTc5NWNjZTQ0MmRmZjA3YTk=
+      DB_CONNECTION_URI: postgres://infisical:infisical@db:5432/infisical?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      SITE_URL: http://localhost:8888
+      TELEMETRY_ENABLED: false
+      INVITE_ONLY_SIGNUP: false
+    networks:
+      - infisical
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/status || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+volumes:
+  pg_data:
+  redis_data:
+
+networks:
+  infisical:
+    driver: bridge
