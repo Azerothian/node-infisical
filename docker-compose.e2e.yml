@@ -32,7 +32,7 @@ services:
     image: infisical/infisical:latest
     container_name: infisical-backend-e2e
     ports:
-      - "8888:8080"
+      - "8889:8080"
     depends_on:
       db:
         condition: service_healthy
@@ -44,7 +44,7 @@ services:
       AUTH_SECRET: YTVlMTM2ODNiODQ4ZjI4ZTc5NWNjZTQ0MmRmZjA3YTk=
       DB_CONNECTION_URI: postgres://infisical:infisical@db:5432/infisical?sslmode=disable
       REDIS_URL: redis://redis:6379
-      SITE_URL: http://localhost:8888
+      SITE_URL: http://localhost:8889
       TELEMETRY_ENABLED: false
       INVITE_ONLY_SIGNUP: false
     networks:

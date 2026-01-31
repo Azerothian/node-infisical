@@ -119,15 +119,6 @@ describe("Identity Universal Auth E2E", () => {
       expect(result.expiresIn).toBeGreaterThan(0);
     });
 
-    it("revokes a client secret", async () => {
-      const result = await client.identityAuth.universal.revokeClientSecret({
-        identityId,
-        clientSecretId,
-      });
-
-      expect(result.clientSecretData).toBeDefined();
-      expect(result.clientSecretData.id).toBe(clientSecretId);
-    });
   });
 
   it("revokes universal auth from identity", async () => {

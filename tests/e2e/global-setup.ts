@@ -1,4 +1,4 @@
-import { writeFileSync, unlinkSync, existsSync } from "fs";
+import { writeFileSync, unlinkSync, existsSync, readFileSync } from "fs";
 import { resolve } from "path";
 
 interface BootstrapResponse {
@@ -13,19 +13,11 @@ interface BootstrapResponse {
   };
 }
 
-interface LoginResponse {
-  token: string;
-  expiresIn: number;
-  mfaEnabled: boolean;
-}
-
-interface Organization {
-  id: string;
-  name: string;
-}
-
-interface OrganizationsResponse {
-  organizations: Organization[];
+interface TestState {
+  baseUrl: string;
+  accessToken: string;
+  organizationId: string;
+  organizationName: string;
 }
 
 const STATE_FILE = resolve(__dirname, ".test-state.json");
@@ -67,62 +59,25 @@ async function waitForInfisical(baseUrl: string): Promise<void> {
   throw new Error(`Infisical failed to become healthy after ${MAX_RETRIES} retries (${(MAX_RETRIES * RETRY_INTERVAL_MS) / 1000}s)`);
 }
 
-async function bootstrapInfisical(baseUrl: string): Promise<{
-  accessToken: string;
-  organizationId: string;
-  organizationName: string;
-}> {
-  console.log("[E2E Setup] Attempting to bootstrap Infisical...");
-
+async function validateToken(baseUrl: string, token: string, organizationId: string): Promise<boolean> {
   try {
-    const response = await fetch(`${baseUrl}/api/v1/admin/bootstrap`, {
-      method: "POST",
+    const response = await fetch(`${baseUrl}/api/v2/organizations/${organizationId}/memberships`, {
+      method: "GET",
       headers: {
-        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        email: TEST_EMAIL,
-        password: TEST_PASSWORD,
-        organization: TEST_ORG_NAME,
-      }),
+      signal: AbortSignal.timeout(5000),
     });
-
-    if (response.ok) {
-      const data: BootstrapResponse = await response.json();
-      console.log("[E2E Setup] Bootstrap successful");
-
-      return {
-        accessToken: data.identity.credentials.token,
-        organizationId: data.organization.id,
-        organizationName: data.organization.name,
-      };
-    }
-
-    if (response.status === 400) {
-      console.log("[E2E Setup] Already bootstrapped, attempting login instead...");
-      return await loginAndGetOrgInfo(baseUrl);
-    }
-
-    const errorText = await response.text();
-    throw new Error(`Bootstrap failed with status ${response.status}: ${errorText}`);
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("Already bootstrapped")) {
-      throw error;
-    }
-
-    console.error("[E2E Setup] Bootstrap error:", error);
-    throw error;
+    return response.ok;
+  } catch {
+    return false;
   }
 }
 
-async function loginAndGetOrgInfo(baseUrl: string): Promise<{
-  accessToken: string;
-  organizationId: string;
-  organizationName: string;
-}> {
-  console.log("[E2E Setup] Logging in...");
+async function bootstrapInfisical(baseUrl: string): Promise<TestState> {
+  console.log("[E2E Setup] Attempting to bootstrap Infisical...");
 
-  const loginResponse = await fetch(`${baseUrl}/api/v3/auth/login`, {
+  const response = await fetch(`${baseUrl}/api/v1/admin/bootstrap`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -130,66 +85,65 @@ async function loginAndGetOrgInfo(baseUrl: string): Promise<{
     body: JSON.stringify({
       email: TEST_EMAIL,
       password: TEST_PASSWORD,
+      organization: TEST_ORG_NAME,
     }),
   });
 
-  if (!loginResponse.ok) {
-    const errorText = await loginResponse.text();
-    throw new Error(`Login failed with status ${loginResponse.status}: ${errorText}`);
+  if (response.ok) {
+    const data: BootstrapResponse = await response.json();
+    console.log("[E2E Setup] Bootstrap successful");
+
+    return {
+      baseUrl,
+      accessToken: data.identity.credentials.token,
+      organizationId: data.organization.id,
+      organizationName: data.organization.name,
+    };
   }
 
-  const loginData: LoginResponse = await loginResponse.json();
-  console.log("[E2E Setup] Login successful");
+  if (response.status === 400) {
+    console.log("[E2E Setup] Already bootstrapped, checking for existing state file...");
 
-  // Get organization info
-  console.log("[E2E Setup] Fetching organization info...");
-  const orgsResponse = await fetch(`${baseUrl}/api/v2/organizations`, {
-    method: "GET",
-    headers: {
-      "Authorization": `Bearer ${loginData.token}`,
-    },
-  });
+    // Try to reuse saved state from a previous bootstrap
+    if (existsSync(STATE_FILE)) {
+      try {
+        const savedState: TestState = JSON.parse(readFileSync(STATE_FILE, "utf-8"));
+        console.log("[E2E Setup] Found existing state file, validating token...");
 
-  if (!orgsResponse.ok) {
-    const errorText = await orgsResponse.text();
-    throw new Error(`Failed to fetch organizations with status ${orgsResponse.status}: ${errorText}`);
+        const isValid = await validateToken(baseUrl, savedState.accessToken, savedState.organizationId);
+        if (isValid) {
+          console.log("[E2E Setup] Existing token is still valid, reusing state");
+          return { ...savedState, baseUrl };
+        }
+
+        console.log("[E2E Setup] Existing token is no longer valid");
+      } catch (error) {
+        console.log("[E2E Setup] Failed to read/parse existing state file");
+      }
+    }
+
+    throw new Error(
+      "Infisical is already bootstrapped and no valid token is available.\n" +
+        "Please reset the containers with: npm run e2e:down && npm run e2e:up"
+    );
   }
 
-  const orgsData: OrganizationsResponse = await orgsResponse.json();
-
-  if (!orgsData.organizations || orgsData.organizations.length === 0) {
-    throw new Error("No organizations found for test user");
-  }
-
-  const org = orgsData.organizations[0];
-  console.log(`[E2E Setup] Using organization: ${org.name} (${org.id})`);
-
-  return {
-    accessToken: loginData.token,
-    organizationId: org.id,
-    organizationName: org.name,
-  };
+  const errorText = await response.text();
+  throw new Error(`Bootstrap failed with status ${response.status}: ${errorText}`);
 }
 
 export async function setup(): Promise<void> {
   try {
-    const baseUrl = process.env.INFISICAL_URL || "http://localhost:8888";
+    const baseUrl = process.env.INFISICAL_URL || "http://localhost:8889";
     console.log(`[E2E Setup] Starting E2E test setup with baseUrl: ${baseUrl}`);
 
     // Wait for Infisical to be ready
     await waitForInfisical(baseUrl);
 
-    // Bootstrap or login
-    const { accessToken, organizationId, organizationName } = await bootstrapInfisical(baseUrl);
+    // Bootstrap or reuse existing state
+    const state = await bootstrapInfisical(baseUrl);
 
     // Write state file
-    const state = {
-      baseUrl,
-      accessToken,
-      organizationId,
-      organizationName,
-    };
-
     writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
     console.log(`[E2E Setup] Test state written to ${STATE_FILE}`);
     console.log("[E2E Setup] Setup complete!");
@@ -201,10 +155,9 @@ export async function setup(): Promise<void> {
 
 export async function teardown(): Promise<void> {
   try {
-    if (existsSync(STATE_FILE)) {
-      unlinkSync(STATE_FILE);
-      console.log(`[E2E Teardown] Deleted test state file: ${STATE_FILE}`);
-    }
+    // NOTE: We intentionally do NOT delete the state file on teardown.
+    // This allows re-running tests without resetting Docker containers.
+    // The state file is cleaned up when containers are destroyed (e2e:down).
     console.log("[E2E Teardown] Teardown complete!");
   } catch (error) {
     console.error("[E2E Teardown] Teardown failed:", error);

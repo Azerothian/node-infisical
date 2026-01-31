@@ -24,7 +24,8 @@ export function createE2EClient(state?: TestState): InfisicalClient {
 
 export async function createTestProject(
   state: TestState,
-  name: string
+  name: string,
+  type: string = "secret-manager"
 ): Promise<{ projectId: string; slug: string; environments: Array<{ id: string; name: string; slug: string }> }> {
   const response = await fetch(`${state.baseUrl}/api/v1/projects`, {
     method: "POST",
@@ -35,7 +36,7 @@ export async function createTestProject(
     body: JSON.stringify({
       projectName: name,
       slug: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-      type: "SecretManager",
+      type,
       shouldCreateDefaultEnvs: true,
     }),
   });

@@ -11,7 +11,7 @@ describe("KMS E2E", () => {
   beforeAll(async () => {
     state = loadTestState();
     client = createE2EClient(state);
-    const project = await createTestProject(state, uniqueName("e2e-kms"));
+    const project = await createTestProject(state, uniqueName("e2e-kms"), "kms");
     projectId = project.projectId;
   });
 

@@ -3,9 +3,6 @@ export enum AuthMethod {
   GOOGLE = "google",
   GITHUB = "github",
   GITLAB = "gitlab",
-  SAML = "saml",
-  LDAP = "ldap",
-  OIDC = "oidc",
 }
 
 export enum MfaMethod {
@@ -70,20 +67,6 @@ export enum CaType {
   INTERNAL = "internal",
   ACME = "acme",
   AZURE_AD_CS = "azure-ad-cs",
-}
-
-export enum SamlProvider {
-  OKTA_SAML = "okta-saml",
-  AZURE_SAML = "azure-saml",
-  JUMPCLOUD_SAML = "jumpcloud-saml",
-  GOOGLE_SAML = "google-saml",
-  KEYCLOAK_SAML = "keycloak-saml",
-  AUTH0_SAML = "auth0-saml",
-}
-
-export enum OidcConfigurationType {
-  CUSTOM = "custom",
-  DISCOVERY_URL = "discovery-url",
 }
 
 export enum JwtSignatureAlgorithm {
