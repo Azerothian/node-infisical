@@ -34,3 +34,5 @@ export * from "./kms";
 export * from "./integration-auth";
 export * from "./app-connections";
 export * from "./secret-syncs";
+export * from "./admin";
+export * from "./org-admin";

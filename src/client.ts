@@ -36,6 +36,8 @@ import { KmsResource } from "./resources/kms";
 import { IntegrationAuthResource } from "./resources/integration-auth";
 import { AppConnectionsResource } from "./resources/app-connections";
 import { SecretSyncsResource } from "./resources/secret-syncs";
+import { AdminResource } from "./resources/admin";
+import { OrgAdminResource } from "./resources/org-admin";
 
 export interface InfisicalClientConfig {
   baseUrl?: string;
@@ -82,6 +84,8 @@ export class InfisicalClient {
   readonly integrationAuth: IntegrationAuthResource;
   readonly appConnections: AppConnectionsResource;
   readonly secretSyncs: SecretSyncsResource;
+  readonly admin: AdminResource;
+  readonly orgAdmin: OrgAdminResource;
 
   constructor(config: InfisicalClientConfig) {
     const http = new HttpClient({
@@ -128,5 +132,7 @@ export class InfisicalClient {
     this.integrationAuth = new IntegrationAuthResource(http);
     this.appConnections = new AppConnectionsResource(http);
     this.secretSyncs = new SecretSyncsResource(http);
+    this.admin = new AdminResource(http);
+    this.orgAdmin = new OrgAdminResource(http);
   }
 }

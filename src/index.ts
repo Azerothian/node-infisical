@@ -48,3 +48,5 @@ export { KmsResource } from "./resources/kms";
 export { IntegrationAuthResource } from "./resources/integration-auth";
 export { AppConnectionsResource } from "./resources/app-connections";
 export { SecretSyncsResource } from "./resources/secret-syncs";
+export { AdminResource } from "./resources/admin";
+export { OrgAdminResource } from "./resources/org-admin";
