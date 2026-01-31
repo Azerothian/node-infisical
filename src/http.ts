@@ -115,7 +115,8 @@ export class HttpClient {
       headers?: Record<string, string>;
     }
   ): Promise<T> {
-    const url = `${this.config.baseUrl}/api/v2${path}${buildQueryString(options?.query)}`;
+    const prefix = path.startsWith("/api/") ? "" : "/api/v2";
+    const url = `${this.config.baseUrl}${prefix}${path}${buildQueryString(options?.query)}`;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
 

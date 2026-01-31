@@ -71,3 +71,30 @@ export enum CaType {
   ACME = "acme",
   AZURE_AD_CS = "azure-ad-cs",
 }
+
+export enum SamlProvider {
+  OKTA_SAML = "okta-saml",
+  AZURE_SAML = "azure-saml",
+  JUMPCLOUD_SAML = "jumpcloud-saml",
+  GOOGLE_SAML = "google-saml",
+  KEYCLOAK_SAML = "keycloak-saml",
+  AUTH0_SAML = "auth0-saml",
+}
+
+export enum OidcConfigurationType {
+  CUSTOM = "custom",
+  DISCOVERY_URL = "discovery-url",
+}
+
+export enum JwtSignatureAlgorithm {
+  RS256 = "RS256",
+  RS384 = "RS384",
+  RS512 = "RS512",
+  ES256 = "ES256",
+  ES384 = "ES384",
+  ES512 = "ES512",
+  PS256 = "PS256",
+  PS384 = "PS384",
+  PS512 = "PS512",
+  EdDSA = "EdDSA",
+}

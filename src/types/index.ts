@@ -12,3 +12,40 @@ export * from "./secret-imports";
 export * from "./pki-ca";
 export * from "./pki-templates";
 export * from "./pki-alerts";
+// Phase 1: SSO & Identity Config
+export * from "./oidc-config";
+export * from "./saml-config";
+export * from "./ldap-config";
+export * from "./scim";
+// Phase 2: Core Management
+export * from "./identities";
+export * from "./groups";
+export * from "./identity-access-tokens";
+export * from "./identity-universal-auth";
+export * from "./identity-token-auth";
+export * from "./identity-aws-auth";
+export * from "./identity-gcp-auth";
+export * from "./identity-azure-auth";
+export * from "./identity-kubernetes-auth";
+export * from "./identity-oidc-auth";
+export * from "./identity-jwt-auth";
+export * from "./identity-ldap-auth";
+export * from "./identity-tls-cert-auth";
+export * from "./identity-oci-auth";
+export * from "./identity-alicloud-auth";
+// Phase 3: Projects & Secrets
+export * from "./projects";
+export * from "./webhooks";
+export * from "./secret-sharing";
+export * from "./secrets";
+// Phase 5: Advanced Features
+export * from "./ssh-ca";
+export * from "./ssh-certificates";
+export * from "./ssh-templates";
+export * from "./ssh-hosts";
+export * from "./ssh-host-groups";
+export * from "./kms";
+export * from "./external-kms";
+export * from "./integration-auth";
+export * from "./app-connections";
+export * from "./secret-syncs";
