@@ -53,7 +53,6 @@ export class AdminResource extends BaseResource {
   // Bootstrap & Signup
 
   async bootstrap(params: BootstrapInstanceParams): Promise<BootstrapInstanceResponse> {
-    this.requireAuth();
     return this.http.post<BootstrapInstanceResponse>("/api/v1/admin/bootstrap", params);
   }
 
