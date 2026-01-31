@@ -22,14 +22,6 @@ import type {
   ListProjectRolesResponse,
   ListProjectTagsParams,
   ListProjectTagsResponse,
-  ListTrustedIpsParams,
-  ListTrustedIpsResponse,
-  CreateTrustedIpParams,
-  CreateTrustedIpResponse,
-  UpdateTrustedIpParams,
-  UpdateTrustedIpResponse,
-  DeleteTrustedIpParams,
-  DeleteTrustedIpResponse,
   CreateProjectParams,
   CreateProjectResponse,
   ListProjectsParams,
@@ -141,35 +133,4 @@ export class ProjectsResource extends BaseResource {
     );
   }
 
-  async listTrustedIps(params: ListTrustedIpsParams): Promise<ListTrustedIpsResponse> {
-    this.requireAuth();
-    return this.http.get<ListTrustedIpsResponse>(
-      `/api/v1/workspace/${encodeURIComponent(params.projectId)}/trusted-ips`
-    );
-  }
-
-  async createTrustedIp(params: CreateTrustedIpParams): Promise<CreateTrustedIpResponse> {
-    this.requireAuth();
-    const { projectId, ...body } = params;
-    return this.http.post<CreateTrustedIpResponse>(
-      `/api/v1/workspace/${encodeURIComponent(projectId)}/trusted-ips`,
-      body
-    );
-  }
-
-  async updateTrustedIp(params: UpdateTrustedIpParams): Promise<UpdateTrustedIpResponse> {
-    this.requireAuth();
-    const { projectId, trustedIpId, ...body } = params;
-    return this.http.patch<UpdateTrustedIpResponse>(
-      `/api/v1/workspace/${encodeURIComponent(projectId)}/trusted-ips/${encodeURIComponent(trustedIpId)}`,
-      body
-    );
-  }
-
-  async deleteTrustedIp(params: DeleteTrustedIpParams): Promise<DeleteTrustedIpResponse> {
-    this.requireAuth();
-    return this.http.delete<DeleteTrustedIpResponse>(
-      `/api/v1/workspace/${encodeURIComponent(params.projectId)}/trusted-ips/${encodeURIComponent(params.trustedIpId)}`
-    );
-  }
 }

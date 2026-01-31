@@ -685,10 +685,6 @@ Manage projects (workspaces), their environments, roles, tags, and trusted IPs.
 | `deleteEnvironment(params)` | DELETE | `/api/v1/workspace/{projectId}/environments/{environmentId}` | JWT, IAT | Delete an environment |
 | `listRoles(params)` | GET | `/api/v1/workspace/{projectId}/roles` | JWT, IAT | List project roles |
 | `listTags(params)` | GET | `/api/v1/workspace/{projectId}/tags` | JWT, IAT | List project tags |
-| `listTrustedIps(params)` | GET | `/api/v1/workspace/{projectId}/trusted-ips` | JWT, IAT | List trusted IPs |
-| `createTrustedIp(params)` | POST | `/api/v1/workspace/{projectId}/trusted-ips` | JWT, IAT | Add a trusted IP |
-| `updateTrustedIp(params)` | PATCH | `/api/v1/workspace/{projectId}/trusted-ips/{trustedIpId}` | JWT, IAT | Update a trusted IP |
-| `deleteTrustedIp(params)` | DELETE | `/api/v1/workspace/{projectId}/trusted-ips/{trustedIpId}` | JWT, IAT | Remove a trusted IP |
 
 ---
 

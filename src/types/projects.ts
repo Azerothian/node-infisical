@@ -61,18 +61,6 @@ export interface ProjectTag {
   updatedAt: string;
 }
 
-export interface TrustedIp {
-  id: string;
-  projectId: string;
-  ipAddress: string;
-  type: string;
-  prefix?: number;
-  isActive: boolean;
-  comment?: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface GetProjectParams {
   projectId: string;
 }
@@ -181,46 +169,6 @@ export interface ListProjectTagsParams {
 
 export interface ListProjectTagsResponse {
   tags: ProjectTag[];
-}
-
-export interface ListTrustedIpsParams {
-  projectId: string;
-}
-
-export interface ListTrustedIpsResponse {
-  trustedIps: TrustedIp[];
-}
-
-export interface CreateTrustedIpParams {
-  projectId: string;
-  ipAddress: string;
-  comment?: string;
-  isActive?: boolean;
-}
-
-export interface CreateTrustedIpResponse {
-  trustedIp: TrustedIp;
-}
-
-export interface UpdateTrustedIpParams {
-  projectId: string;
-  trustedIpId: string;
-  ipAddress?: string;
-  comment?: string;
-  isActive?: boolean;
-}
-
-export interface UpdateTrustedIpResponse {
-  trustedIp: TrustedIp;
-}
-
-export interface DeleteTrustedIpParams {
-  projectId: string;
-  trustedIpId: string;
-}
-
-export interface DeleteTrustedIpResponse {
-  trustedIp: TrustedIp;
 }
 
 export interface CreateProjectParams {
