@@ -61,3 +61,24 @@ export interface ListAppConnectionsParams {
 export interface ListAppConnectionsResponse {
   appConnections: AppConnection[];
 }
+
+export interface GetAppConnectionByNameParams {
+  app: string;
+  connectionName: string;
+}
+
+export interface GetAppConnectionByNameResponse {
+  appConnection: AppConnection;
+}
+
+export interface CheckAppConnectionAvailabilityParams {
+  app: string;
+}
+
+export interface CheckAppConnectionAvailabilityResponse {
+  available: boolean;
+}
+
+export interface ListAllAppConnectionsResponse {
+  appConnections: AppConnection[];
+}

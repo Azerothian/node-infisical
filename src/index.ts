@@ -26,6 +26,8 @@ export { SecretImportsResource } from "./resources/secret-imports";
 export { PkiCaResource } from "./resources/pki-ca";
 export { PkiTemplatesResource } from "./resources/pki-templates";
 export { PkiAlertsResource } from "./resources/pki-alerts";
+export { PkiCertificatesResource } from "./resources/pki-certificates";
+export { SecretTagsResource } from "./resources/secret-tags";
 export { IdentitiesResource } from "./resources/identities";
 export { IdentityAccessTokensResource } from "./resources/identity-access-tokens";
 export { IdentityUniversalAuthResource } from "./resources/identity-universal-auth";

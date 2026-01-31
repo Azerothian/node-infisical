@@ -13,6 +13,8 @@ import { SecretImportsResource } from "./resources/secret-imports";
 import { PkiCaResource } from "./resources/pki-ca";
 import { PkiTemplatesResource } from "./resources/pki-templates";
 import { PkiAlertsResource } from "./resources/pki-alerts";
+import { PkiCertificatesResource } from "./resources/pki-certificates";
+import { SecretTagsResource } from "./resources/secret-tags";
 import { IdentitiesResource } from "./resources/identities";
 import { IdentityAccessTokensResource } from "./resources/identity-access-tokens";
 import { IdentityUniversalAuthResource } from "./resources/identity-universal-auth";
@@ -60,6 +62,8 @@ export class InfisicalClient {
   readonly pkiCa: PkiCaResource;
   readonly pkiTemplates: PkiTemplatesResource;
   readonly pkiAlerts: PkiAlertsResource;
+  readonly pkiCertificates: PkiCertificatesResource;
+  readonly secretTags: SecretTagsResource;
   readonly identities: IdentitiesResource;
   readonly identityAccessTokens: IdentityAccessTokensResource;
   readonly identityAuth: {
@@ -108,6 +112,8 @@ export class InfisicalClient {
     this.pkiCa = new PkiCaResource(http);
     this.pkiTemplates = new PkiTemplatesResource(http);
     this.pkiAlerts = new PkiAlertsResource(http);
+    this.pkiCertificates = new PkiCertificatesResource(http);
+    this.secretTags = new SecretTagsResource(http);
     this.identities = new IdentitiesResource(http);
     this.identityAccessTokens = new IdentityAccessTokensResource(http);
     this.identityAuth = {

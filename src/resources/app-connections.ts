@@ -10,6 +10,11 @@ import type {
   GetAppConnectionResponse,
   ListAppConnectionsParams,
   ListAppConnectionsResponse,
+  GetAppConnectionByNameParams,
+  GetAppConnectionByNameResponse,
+  CheckAppConnectionAvailabilityParams,
+  CheckAppConnectionAvailabilityResponse,
+  ListAllAppConnectionsResponse,
 } from "../types/app-connections";
 
 export class AppConnectionsResource extends BaseResource {
@@ -44,6 +49,24 @@ export class AppConnectionsResource extends BaseResource {
   async list(params: ListAppConnectionsParams): Promise<ListAppConnectionsResponse> {
     return this.http.get<ListAppConnectionsResponse>(
       `/api/v1/app-connections/${encodeURIComponent(params.app)}`
+    );
+  }
+
+  async getByName(params: GetAppConnectionByNameParams): Promise<GetAppConnectionByNameResponse> {
+    return this.http.get<GetAppConnectionByNameResponse>(
+      `/api/v1/app-connections/${encodeURIComponent(params.app)}/connection-name/${encodeURIComponent(params.connectionName)}`
+    );
+  }
+
+  async checkAvailability(params: CheckAppConnectionAvailabilityParams): Promise<CheckAppConnectionAvailabilityResponse> {
+    return this.http.get<CheckAppConnectionAvailabilityResponse>(
+      `/api/v1/app-connections/${encodeURIComponent(params.app)}/available`
+    );
+  }
+
+  async listAll(): Promise<ListAllAppConnectionsResponse> {
+    return this.http.get<ListAllAppConnectionsResponse>(
+      "/api/v1/app-connections/list"
     );
   }
 }

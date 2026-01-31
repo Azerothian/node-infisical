@@ -222,3 +222,35 @@ export interface DeleteTrustedIpParams {
 export interface DeleteTrustedIpResponse {
   trustedIp: TrustedIp;
 }
+
+export interface CreateProjectParams {
+  projectName: string;
+  projectDescription?: string;
+  slug?: string;
+  kmsKeyId?: string;
+  template?: string;
+  type?: string;
+  shouldCreateDefaultEnvs?: boolean;
+  hasDeleteProtection?: boolean;
+}
+
+export interface CreateProjectResponse {
+  project: Project & { _id: string };
+}
+
+export interface ListProjectsParams {
+  includeRoles?: boolean;
+  type?: string;
+}
+
+export interface ListProjectsResponse {
+  projects: Array<Project & { _id: string }>;
+}
+
+export interface GetProjectBySlugParams {
+  slug: string;
+}
+
+export interface GetProjectBySlugResponse extends Project {
+  _id: string;
+}

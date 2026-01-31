@@ -86,3 +86,30 @@ export interface TriggerSecretSyncParams {
 export interface TriggerSecretSyncResponse {
   secretSync: SecretSync;
 }
+
+export interface ImportSecretSyncParams {
+  destination: string;
+  syncId: string;
+}
+
+export interface ImportSecretSyncResponse {
+  secretSync: SecretSync;
+}
+
+export interface RemoveSecretSyncSecretsParams {
+  destination: string;
+  syncId: string;
+}
+
+export interface RemoveSecretSyncSecretsResponse {
+  secretSync: SecretSync;
+}
+
+export interface GetSecretSyncByNameParams {
+  destination: string;
+  syncName: string;
+}
+
+export interface GetSecretSyncByNameResponse {
+  secretSync: SecretSync;
+}

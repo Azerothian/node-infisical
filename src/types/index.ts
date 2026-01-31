@@ -12,6 +12,8 @@ export * from "./secret-imports";
 export * from "./pki-ca";
 export * from "./pki-templates";
 export * from "./pki-alerts";
+export * from "./pki-certificates";
+export * from "./secret-tags";
 export * from "./identities";
 export * from "./identity-access-tokens";
 export * from "./identity-universal-auth";

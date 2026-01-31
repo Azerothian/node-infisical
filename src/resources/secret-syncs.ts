@@ -12,6 +12,12 @@ import type {
   ListSecretSyncsResponse,
   TriggerSecretSyncParams,
   TriggerSecretSyncResponse,
+  ImportSecretSyncParams,
+  ImportSecretSyncResponse,
+  RemoveSecretSyncSecretsParams,
+  RemoveSecretSyncSecretsResponse,
+  GetSecretSyncByNameParams,
+  GetSecretSyncByNameResponse,
 } from "../types/secret-syncs";
 
 export class SecretSyncsResource extends BaseResource {
@@ -56,6 +62,24 @@ export class SecretSyncsResource extends BaseResource {
   async trigger(params: TriggerSecretSyncParams): Promise<TriggerSecretSyncResponse> {
     return this.http.post<TriggerSecretSyncResponse>(
       `/api/v1/secret-syncs/${encodeURIComponent(params.destination)}/${encodeURIComponent(params.syncId)}/sync`
+    );
+  }
+
+  async importSecrets(params: ImportSecretSyncParams): Promise<ImportSecretSyncResponse> {
+    return this.http.post<ImportSecretSyncResponse>(
+      `/api/v1/secret-syncs/${encodeURIComponent(params.destination)}/${encodeURIComponent(params.syncId)}/import-secrets`
+    );
+  }
+
+  async removeSecrets(params: RemoveSecretSyncSecretsParams): Promise<RemoveSecretSyncSecretsResponse> {
+    return this.http.post<RemoveSecretSyncSecretsResponse>(
+      `/api/v1/secret-syncs/${encodeURIComponent(params.destination)}/${encodeURIComponent(params.syncId)}/remove-secrets`
+    );
+  }
+
+  async getByName(params: GetSecretSyncByNameParams): Promise<GetSecretSyncByNameResponse> {
+    return this.http.get<GetSecretSyncByNameResponse>(
+      `/api/v1/secret-syncs/${encodeURIComponent(params.destination)}/sync-name/${encodeURIComponent(params.syncName)}`
     );
   }
 }

@@ -76,3 +76,63 @@ export interface KmsDecryptParams {
 export interface KmsDecryptResponse {
   plaintext: string;
 }
+
+export interface GetKmsKeyByNameParams {
+  keyName: string;
+  projectId: string;
+}
+
+export interface GetKmsKeyByNameResponse {
+  key: KmsKey;
+}
+
+export interface GetKmsPublicKeyParams {
+  keyId: string;
+}
+
+export interface GetKmsPublicKeyResponse {
+  publicKey: string;
+}
+
+export interface GetKmsPrivateKeyParams {
+  keyId: string;
+}
+
+export interface GetKmsPrivateKeyResponse {
+  privateKey: string;
+}
+
+export interface ListKmsSigningAlgorithmsParams {
+  keyId: string;
+}
+
+export interface ListKmsSigningAlgorithmsResponse {
+  signingAlgorithms: string[];
+}
+
+export interface KmsSignParams {
+  keyId: string;
+  signingAlgorithm: string;
+  data: string;
+  isDigest?: boolean;
+}
+
+export interface KmsSignResponse {
+  signature: string;
+  keyId: string;
+  signingAlgorithm: string;
+}
+
+export interface KmsVerifyParams {
+  keyId: string;
+  data: string;
+  signature: string;
+  signingAlgorithm: string;
+  isDigest?: boolean;
+}
+
+export interface KmsVerifyResponse {
+  signatureValid: boolean;
+  keyId: string;
+  signingAlgorithm: string;
+}

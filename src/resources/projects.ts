@@ -28,12 +28,38 @@ import type {
   UpdateTrustedIpResponse,
   DeleteTrustedIpParams,
   DeleteTrustedIpResponse,
+  CreateProjectParams,
+  CreateProjectResponse,
+  ListProjectsParams,
+  ListProjectsResponse,
+  GetProjectBySlugParams,
+  GetProjectBySlugResponse,
 } from "../types/projects";
 
 export class ProjectsResource extends BaseResource {
+  async create(params: CreateProjectParams): Promise<CreateProjectResponse> {
+    return this.http.post<CreateProjectResponse>(
+      "/api/v1/projects",
+      params
+    );
+  }
+
+  async list(params?: ListProjectsParams): Promise<ListProjectsResponse> {
+    return this.http.get<ListProjectsResponse>(
+      "/api/v1/projects",
+      { ...params } as Record<string, unknown>
+    );
+  }
+
   async get(params: GetProjectParams): Promise<GetProjectResponse> {
     return this.http.get<GetProjectResponse>(
       `/api/v1/workspace/${encodeURIComponent(params.projectId)}`
+    );
+  }
+
+  async getBySlug(params: GetProjectBySlugParams): Promise<GetProjectBySlugResponse> {
+    return this.http.get<GetProjectBySlugResponse>(
+      `/api/v1/projects/slug/${encodeURIComponent(params.slug)}`
     );
   }
 

@@ -92,11 +92,11 @@ export interface ListMembershipsResponse {
   users: OrgMembershipWithUser[];
 }
 
-export interface ListProjectsParams {
+export interface ListOrgProjectsParams {
   orgId: string;
 }
 
-export interface ListProjectsResponse {
+export interface ListOrgProjectsResponse {
   workspaces: OrgProject[];
 }
 

@@ -2,8 +2,8 @@ import { BaseResource } from "./base";
 import type {
   ListMembershipsParams,
   ListMembershipsResponse,
-  ListProjectsParams,
-  ListProjectsResponse,
+  ListOrgProjectsParams,
+  ListOrgProjectsResponse,
   GetMembershipParams,
   GetMembershipResponse,
   UpdateMembershipParams,
@@ -31,9 +31,9 @@ export class OrganizationsResource extends BaseResource {
   }
 
   async listProjects(
-    params: ListProjectsParams
-  ): Promise<ListProjectsResponse> {
-    return this.http.get<ListProjectsResponse>(
+    params: ListOrgProjectsParams
+  ): Promise<ListOrgProjectsResponse> {
+    return this.http.get<ListOrgProjectsResponse>(
       `/organizations/${encodeURIComponent(params.orgId)}/workspaces`
     );
   }

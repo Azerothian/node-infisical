@@ -14,6 +14,18 @@ import type {
   KmsEncryptResponse,
   KmsDecryptParams,
   KmsDecryptResponse,
+  GetKmsKeyByNameParams,
+  GetKmsKeyByNameResponse,
+  GetKmsPublicKeyParams,
+  GetKmsPublicKeyResponse,
+  GetKmsPrivateKeyParams,
+  GetKmsPrivateKeyResponse,
+  ListKmsSigningAlgorithmsParams,
+  ListKmsSigningAlgorithmsResponse,
+  KmsSignParams,
+  KmsSignResponse,
+  KmsVerifyParams,
+  KmsVerifyResponse,
 } from "../types/kms";
 
 export class KmsResource extends BaseResource {
@@ -63,6 +75,48 @@ export class KmsResource extends BaseResource {
     const { keyId, ...body } = params;
     return this.http.post<KmsDecryptResponse>(
       `/api/v1/kms/keys/${encodeURIComponent(keyId)}/decrypt`,
+      body
+    );
+  }
+
+  async getKeyByName(params: GetKmsKeyByNameParams): Promise<GetKmsKeyByNameResponse> {
+    const { keyName, ...query } = params;
+    return this.http.get<GetKmsKeyByNameResponse>(
+      `/api/v1/kms/keys/key-name/${encodeURIComponent(keyName)}`,
+      { ...query } as Record<string, unknown>
+    );
+  }
+
+  async getPublicKey(params: GetKmsPublicKeyParams): Promise<GetKmsPublicKeyResponse> {
+    return this.http.get<GetKmsPublicKeyResponse>(
+      `/api/v1/kms/keys/${encodeURIComponent(params.keyId)}/public-key`
+    );
+  }
+
+  async getPrivateKey(params: GetKmsPrivateKeyParams): Promise<GetKmsPrivateKeyResponse> {
+    return this.http.get<GetKmsPrivateKeyResponse>(
+      `/api/v1/kms/keys/${encodeURIComponent(params.keyId)}/private-key`
+    );
+  }
+
+  async listSigningAlgorithms(params: ListKmsSigningAlgorithmsParams): Promise<ListKmsSigningAlgorithmsResponse> {
+    return this.http.get<ListKmsSigningAlgorithmsResponse>(
+      `/api/v1/kms/keys/${encodeURIComponent(params.keyId)}/signing-algorithms`
+    );
+  }
+
+  async sign(params: KmsSignParams): Promise<KmsSignResponse> {
+    const { keyId, ...body } = params;
+    return this.http.post<KmsSignResponse>(
+      `/api/v1/kms/keys/${encodeURIComponent(keyId)}/sign`,
+      body
+    );
+  }
+
+  async verify(params: KmsVerifyParams): Promise<KmsVerifyResponse> {
+    const { keyId, ...body } = params;
+    return this.http.post<KmsVerifyResponse>(
+      `/api/v1/kms/keys/${encodeURIComponent(keyId)}/verify`,
       body
     );
   }
