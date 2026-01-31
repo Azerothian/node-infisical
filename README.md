@@ -38,6 +38,8 @@ A TypeScript SDK for the [Infisical](https://infisical.com) API. Provides typed 
   - [KMS](#kms)
   - [Integration Auth](#integration-auth)
   - [App Connections](#app-connections)
+  - [Admin](#admin)
+  - [Org Admin](#org-admin)
 
 ---
 
@@ -804,6 +806,54 @@ Manage connections to external applications.
 | `delete(params)` | DELETE | `/api/v1/app-connections/{app}/{connectionId}` | JWT, IAT | Delete a connection |
 | `get(params)` | GET | `/api/v1/app-connections/{app}/{connectionId}` | JWT, IAT | Get connection details |
 | `list(params)` | GET | `/api/v1/app-connections/{app}` | JWT, IAT | List connections for an app |
+
+---
+
+### Admin
+
+Super admin endpoints for managing the Infisical instance: configuration, user management, organization management, identity management, integrations, encryption, cache, and usage reports.
+
+**Accessor:** `client.admin`
+
+| Method | HTTP | Path | Auth | Description |
+|---|---|---|---|---|
+| `bootstrap(params)` | POST | `/api/v1/admin/bootstrap` | None | Bootstrap a new Infisical instance |
+| `signup(params)` | POST | `/api/v1/admin/signup` | None | Admin sign up |
+| `getConfig()` | GET | `/api/v1/admin/config` | None | Get server configuration |
+| `updateConfig(params)` | PATCH | `/api/v1/admin/config` | JWT, IAT | Update server configuration |
+| `listUsers(params?)` | GET | `/api/v1/admin/user-management/users` | JWT, IAT | List all users |
+| `deleteUser(params)` | DELETE | `/api/v1/admin/user-management/users/{userId}` | JWT, IAT | Delete a user |
+| `deleteUsers(params)` | DELETE | `/api/v1/admin/user-management/users` | JWT, IAT | Bulk delete users |
+| `grantAdminAccess(params)` | PATCH | `/api/v1/admin/user-management/users/{userId}/admin-access` | JWT, IAT | Grant super admin access to a user |
+| `revokeAdminAccess(params)` | DELETE | `/api/v1/admin/user-management/users/{userId}/admin-access` | JWT, IAT | Revoke super admin access from a user |
+| `listOrganizations(params?)` | GET | `/api/v1/admin/organization-management/organizations` | JWT, IAT | List all organizations |
+| `createOrganization(params)` | POST | `/api/v1/admin/organization-management/organizations` | JWT, IAT | Create an organization |
+| `deleteOrganization(params)` | DELETE | `/api/v1/admin/organization-management/organizations/{organizationId}` | JWT, IAT | Delete an organization |
+| `deleteOrgMembership(params)` | DELETE | `/api/v1/admin/organization-management/organizations/{organizationId}/memberships/{membershipId}` | JWT, IAT | Remove a member from an organization |
+| `resendOrgInvite(params)` | POST | `/api/v1/admin/organization-management/organizations/{organizationId}/memberships/{membershipId}/resend-invite` | JWT, IAT | Resend an organization invite |
+| `joinOrganization(params)` | POST | `/api/v1/admin/organization-management/organizations/{organizationId}/access` | JWT | Join an organization as admin |
+| `listIdentities(params?)` | GET | `/api/v1/admin/identity-management/identities` | JWT, IAT | List all identities |
+| `revokeIdentitySuperAdmin(params)` | DELETE | `/api/v1/admin/identity-management/identities/{identityId}/super-admin-access` | JWT, IAT | Revoke super admin access from an identity |
+| `getIntegrations()` | GET | `/api/v1/admin/integrations` | JWT, IAT | Get admin integrations (Slack, Teams, GitHub) |
+| `getEncryptionStrategies()` | GET | `/api/v1/admin/encryption-strategies` | JWT, IAT | List encryption strategies |
+| `updateEncryptionStrategy(params)` | PATCH | `/api/v1/admin/encryption-strategies` | JWT, IAT | Update encryption strategy |
+| `getEnvOverrides()` | GET | `/api/v1/admin/env-overrides` | JWT, IAT | Get environment variable overrides |
+| `invalidateCache(params)` | POST | `/api/v1/admin/invalidate-cache` | JWT, IAT | Invalidate server cache |
+| `getCacheStatus()` | GET | `/api/v1/admin/invalidating-cache-status` | JWT, IAT | Get cache invalidation status |
+| `generateUsageReport()` | POST | `/api/v1/admin/usage-report/generate` | JWT, IAT | Generate a usage report (CSV) |
+
+---
+
+### Org Admin
+
+Organization admin endpoints for managing projects across the organization.
+
+**Accessor:** `client.orgAdmin`
+
+| Method | HTTP | Path | Auth | Description |
+|---|---|---|---|---|
+| `listProjects(params?)` | GET | `/api/v1/org-admin/projects` | JWT, IAT | List all projects in the organization |
+| `grantProjectAccess(params)` | POST | `/api/v1/org-admin/projects/{projectId}/grant-admin-access` | JWT | Grant admin access to a project |
 
 ---
 

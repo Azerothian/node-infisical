@@ -127,7 +127,7 @@ export interface ListAdminOrganizationsResponse {
 
 export interface CreateAdminOrganizationParams {
   name: string;
-  inviteAdminEmails?: string[];
+  inviteAdminEmails: string[];
 }
 
 export interface CreateAdminOrganizationResponse {
