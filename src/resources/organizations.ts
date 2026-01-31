@@ -1,6 +1,7 @@
 import { BaseResource } from "./base";
 import type { HttpClient } from "../http";
 import type { AuthState } from "../auth-state";
+import type { ListOrganizationsResponse } from "../types/users";
 import type {
   ListMembershipsParams,
   ListMembershipsResponse,
@@ -27,6 +28,12 @@ export class OrganizationsResource extends BaseResource {
   constructor(http: HttpClient, authState: AuthState) {
     super(http, authState, "organizations");
   }
+
+  async list(): Promise<ListOrganizationsResponse> {
+    this.requireAuth();
+    return this.http.get<ListOrganizationsResponse>("/api/v1/organization");
+  }
+
   async listMemberships(
     params: ListMembershipsParams
   ): Promise<ListMembershipsResponse> {
