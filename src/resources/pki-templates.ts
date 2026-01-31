@@ -15,11 +15,18 @@ import type {
   SignCertificateParams,
   SignCertificateResponse,
 } from "../types/pki-templates";
+import type { HttpClient } from "../http";
+import type { AuthState } from "../auth-state";
 
 export class PkiTemplatesResource extends BaseResource {
+  constructor(http: HttpClient, authState: AuthState) {
+    super(http, authState, "pki");
+  }
+
   async create(
     params: CreatePkiTemplateParams
   ): Promise<CreatePkiTemplateResponse> {
+    this.requireAuth();
     return this.http.post<CreatePkiTemplateResponse>(
       "/pki/certificate-templates",
       params
@@ -29,6 +36,7 @@ export class PkiTemplatesResource extends BaseResource {
   async update(
     params: UpdatePkiTemplateParams
   ): Promise<UpdatePkiTemplateResponse> {
+    this.requireAuth();
     const { templateName, ...body } = params;
     return this.http.patch<UpdatePkiTemplateResponse>(
       `/pki/certificate-templates/${encodeURIComponent(templateName)}`,
@@ -39,6 +47,7 @@ export class PkiTemplatesResource extends BaseResource {
   async delete(
     params: DeletePkiTemplateParams
   ): Promise<DeletePkiTemplateResponse> {
+    this.requireAuth();
     const { templateName, ...body } = params;
     return this.http.delete<DeletePkiTemplateResponse>(
       `/pki/certificate-templates/${encodeURIComponent(templateName)}`,
@@ -49,6 +58,7 @@ export class PkiTemplatesResource extends BaseResource {
   async get(
     params: GetPkiTemplateParams
   ): Promise<GetPkiTemplateResponse> {
+    this.requireAuth();
     const { templateName, ...query } = params;
     return this.http.get<GetPkiTemplateResponse>(
       `/pki/certificate-templates/${encodeURIComponent(templateName)}`,
@@ -59,6 +69,7 @@ export class PkiTemplatesResource extends BaseResource {
   async list(
     params: ListPkiTemplatesParams
   ): Promise<ListPkiTemplatesResponse> {
+    this.requireAuth();
     return this.http.get<ListPkiTemplatesResponse>(
       "/pki/certificate-templates",
       { ...params } as Record<string, unknown>
@@ -68,6 +79,7 @@ export class PkiTemplatesResource extends BaseResource {
   async issueCertificate(
     params: IssueCertificateParams
   ): Promise<IssueCertificateResponse> {
+    this.requireAuth();
     const { templateName, ...body } = params;
     return this.http.post<IssueCertificateResponse>(
       `/pki/certificate-templates/${encodeURIComponent(templateName)}/issue-certificate`,
@@ -78,6 +90,7 @@ export class PkiTemplatesResource extends BaseResource {
   async signCertificate(
     params: SignCertificateParams
   ): Promise<SignCertificateResponse> {
+    this.requireAuth();
     const { templateName, ...body } = params;
     return this.http.post<SignCertificateResponse>(
       `/pki/certificate-templates/${encodeURIComponent(templateName)}/sign-certificate`,

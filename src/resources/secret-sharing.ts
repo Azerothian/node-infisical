@@ -1,4 +1,6 @@
 import { BaseResource } from "./base";
+import type { HttpClient } from "../http";
+import type { AuthState } from "../auth-state";
 import type {
   CreateSharedSecretParams,
   CreateSharedSecretResponse,
@@ -10,7 +12,11 @@ import type {
 } from "../types/secret-sharing";
 
 export class SecretSharingResource extends BaseResource {
+  constructor(http: HttpClient, authState: AuthState) {
+    super(http, authState, "secretSharing");
+  }
   async create(params: CreateSharedSecretParams): Promise<CreateSharedSecretResponse> {
+    this.requireAuth();
     return this.http.post<CreateSharedSecretResponse>(
       "/api/v1/secret-sharing",
       params
@@ -18,6 +24,7 @@ export class SecretSharingResource extends BaseResource {
   }
 
   async get(params: GetSharedSecretParams): Promise<GetSharedSecretResponse> {
+    this.requireAuth();
     return this.http.get<GetSharedSecretResponse>(
       `/api/v1/secret-sharing/${encodeURIComponent(params.sharedSecretId)}`,
       { hashedHex: params.hashedHex }
@@ -25,12 +32,14 @@ export class SecretSharingResource extends BaseResource {
   }
 
   async delete(params: DeleteSharedSecretParams): Promise<DeleteSharedSecretResponse> {
+    this.requireAuth();
     return this.http.delete<DeleteSharedSecretResponse>(
       `/api/v1/secret-sharing/${encodeURIComponent(params.sharedSecretId)}`
     );
   }
 
   async list(): Promise<ListSharedSecretsResponse> {
+    this.requireAuth();
     return this.http.get<ListSharedSecretsResponse>(
       "/api/v1/secret-sharing"
     );

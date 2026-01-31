@@ -11,8 +11,14 @@ import type {
   RevokeAzureAuthParams,
   RevokeAzureAuthResponse,
 } from "../types/identity-azure-auth";
+import type { HttpClient } from "../http";
+import type { AuthState } from "../auth-state";
 
 export class IdentityAzureAuthResource extends BaseResource {
+  constructor(http: HttpClient, authState: AuthState) {
+    super(http, authState, "identityAuth");
+  }
+
   async login(params: LoginAzureAuthParams): Promise<LoginAzureAuthResponse> {
     return this.http.post<LoginAzureAuthResponse>(
       "/api/v1/auth/azure-auth/login",
@@ -21,6 +27,7 @@ export class IdentityAzureAuthResource extends BaseResource {
   }
 
   async attach(params: AttachAzureAuthParams): Promise<AttachAzureAuthResponse> {
+    this.requireAuth();
     const { identityId, ...body } = params;
     return this.http.post<AttachAzureAuthResponse>(
       `/api/v1/auth/azure-auth/identities/${encodeURIComponent(identityId)}`,
@@ -29,6 +36,7 @@ export class IdentityAzureAuthResource extends BaseResource {
   }
 
   async update(params: UpdateAzureAuthParams): Promise<UpdateAzureAuthResponse> {
+    this.requireAuth();
     const { identityId, ...body } = params;
     return this.http.patch<UpdateAzureAuthResponse>(
       `/api/v1/auth/azure-auth/identities/${encodeURIComponent(identityId)}`,
@@ -37,12 +45,14 @@ export class IdentityAzureAuthResource extends BaseResource {
   }
 
   async get(params: GetAzureAuthParams): Promise<GetAzureAuthResponse> {
+    this.requireAuth();
     return this.http.get<GetAzureAuthResponse>(
       `/api/v1/auth/azure-auth/identities/${encodeURIComponent(params.identityId)}`
     );
   }
 
   async revoke(params: RevokeAzureAuthParams): Promise<RevokeAzureAuthResponse> {
+    this.requireAuth();
     return this.http.delete<RevokeAzureAuthResponse>(
       `/api/v1/auth/azure-auth/identities/${encodeURIComponent(params.identityId)}`
     );

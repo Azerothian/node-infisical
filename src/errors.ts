@@ -76,6 +76,21 @@ export class InternalServerError extends InfisicalApiError {
   }
 }
 
+export class AuthenticationError extends Error {
+  readonly currentMode: string | null;
+  readonly allowedModes: readonly string[];
+
+  constructor(
+    message: string,
+    options: { currentMode: string | null; allowedModes: readonly string[] }
+  ) {
+    super(message);
+    this.name = "AuthenticationError";
+    this.currentMode = options.currentMode;
+    this.allowedModes = options.allowedModes;
+  }
+}
+
 export class InfisicalNetworkError extends Error {
   override readonly cause?: Error;
 

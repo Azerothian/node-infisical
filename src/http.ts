@@ -10,6 +10,7 @@ import {
   InternalServerError,
 } from "./errors";
 import type { AuthConfig } from "./types/auth";
+import type { AuthState } from "./auth-state";
 
 export type FetchFunction = (
   input: string | URL | Request,
@@ -18,7 +19,7 @@ export type FetchFunction = (
 
 export interface HttpClientConfig {
   baseUrl: string;
-  auth: AuthConfig;
+  authState: AuthState;
   fetch: FetchFunction;
   timeout: number;
   headers?: Record<string, string>;
@@ -115,6 +116,7 @@ export class HttpClient {
       headers?: Record<string, string>;
     }
   ): Promise<T> {
+    await this.config.authState.ensureValid();
     const prefix = path.startsWith("/api/") ? "" : "/api/v2";
     const url = `${this.config.baseUrl}${prefix}${path}${buildQueryString(options?.query)}`;
     const controller = new AbortController();
@@ -123,7 +125,7 @@ export class HttpClient {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       Accept: "application/json",
-      ...getAuthHeader(this.config.auth),
+      ...(this.config.authState.current ? getAuthHeader(this.config.authState.current) : {}),
       ...this.config.headers,
       ...options?.headers,
     };

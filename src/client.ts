@@ -1,6 +1,10 @@
 import { HttpClient } from "./http";
 import type { FetchFunction } from "./http";
-import type { AuthConfig } from "./types/auth";
+import { AuthState } from "./auth-state";
+import type { LoginResponse } from "./auth-state";
+import { AuthManager } from "./auth-manager";
+import type { LoginParams } from "./auth-manager";
+import type { AuthMode } from "./types/auth-modes";
 import { MfaResource } from "./resources/mfa";
 import { MfaSessionsResource } from "./resources/mfa-sessions";
 import { UsersResource } from "./resources/users";
@@ -29,7 +33,6 @@ import { IdentityLdapAuthResource } from "./resources/identity-ldap-auth";
 import { IdentityTlsCertAuthResource } from "./resources/identity-tls-cert-auth";
 import { IdentityOciAuthResource } from "./resources/identity-oci-auth";
 import { IdentityAlicloudAuthResource } from "./resources/identity-alicloud-auth";
-// Phase 3: Projects & Secrets
 import { ProjectsResource } from "./resources/projects";
 import { WebhooksResource } from "./resources/webhooks";
 import { SecretSharingResource } from "./resources/secret-sharing";
@@ -43,7 +46,6 @@ import { OrgAdminResource } from "./resources/org-admin";
 
 export interface InfisicalClientConfig {
   baseUrl?: string;
-  auth: AuthConfig;
   fetch?: FetchFunction;
   timeout?: number;
   headers?: Record<string, string>;
@@ -59,10 +61,12 @@ export class InfisicalClient {
   readonly organizationIdentities: OrganizationIdentitiesResource;
   readonly secretFolders: SecretFoldersResource;
   readonly secretImports: SecretImportsResource;
-  readonly pkiCa: PkiCaResource;
-  readonly pkiTemplates: PkiTemplatesResource;
-  readonly pkiAlerts: PkiAlertsResource;
-  readonly pkiCertificates: PkiCertificatesResource;
+  readonly pki: {
+    readonly ca: PkiCaResource;
+    readonly templates: PkiTemplatesResource;
+    readonly alerts: PkiAlertsResource;
+    readonly certificates: PkiCertificatesResource;
+  };
   readonly secretTags: SecretTagsResource;
   readonly identities: IdentitiesResource;
   readonly identityAccessTokens: IdentityAccessTokensResource;
@@ -91,54 +95,83 @@ export class InfisicalClient {
   readonly admin: AdminResource;
   readonly orgAdmin: OrgAdminResource;
 
-  constructor(config: InfisicalClientConfig) {
+  private readonly _authState: AuthState;
+  private readonly _authManager: AuthManager;
+
+  constructor(config: InfisicalClientConfig = {}) {
+    this._authState = new AuthState();
     const http = new HttpClient({
       baseUrl: config.baseUrl ?? "https://app.infisical.com",
-      auth: config.auth,
+      authState: this._authState,
       fetch: config.fetch ?? fetch,
       timeout: config.timeout ?? 30_000,
       headers: config.headers,
     });
 
-    this.mfa = new MfaResource(http);
-    this.mfaSessions = new MfaSessionsResource(http);
-    this.users = new UsersResource(http);
-    this.password = new PasswordResource(http);
-    this.serviceTokens = new ServiceTokensResource(http);
-    this.organizations = new OrganizationsResource(http);
-    this.organizationIdentities = new OrganizationIdentitiesResource(http);
-    this.secretFolders = new SecretFoldersResource(http);
-    this.secretImports = new SecretImportsResource(http);
-    this.pkiCa = new PkiCaResource(http);
-    this.pkiTemplates = new PkiTemplatesResource(http);
-    this.pkiAlerts = new PkiAlertsResource(http);
-    this.pkiCertificates = new PkiCertificatesResource(http);
-    this.secretTags = new SecretTagsResource(http);
-    this.identities = new IdentitiesResource(http);
-    this.identityAccessTokens = new IdentityAccessTokensResource(http);
-    this.identityAuth = {
-      universal: new IdentityUniversalAuthResource(http),
-      token: new IdentityTokenAuthResource(http),
-      aws: new IdentityAwsAuthResource(http),
-      gcp: new IdentityGcpAuthResource(http),
-      azure: new IdentityAzureAuthResource(http),
-      kubernetes: new IdentityKubernetesAuthResource(http),
-      oidc: new IdentityOidcAuthResource(http),
-      jwt: new IdentityJwtAuthResource(http),
-      ldap: new IdentityLdapAuthResource(http),
-      tlsCert: new IdentityTlsCertAuthResource(http),
-      oci: new IdentityOciAuthResource(http),
-      alicloud: new IdentityAlicloudAuthResource(http),
+    const as = this._authState;
+
+    this.mfa = new MfaResource(http, as);
+    this.mfaSessions = new MfaSessionsResource(http, as);
+    this.users = new UsersResource(http, as);
+    this.password = new PasswordResource(http, as);
+    this.serviceTokens = new ServiceTokensResource(http, as);
+    this.organizations = new OrganizationsResource(http, as);
+    this.organizationIdentities = new OrganizationIdentitiesResource(http, as);
+    this.secretFolders = new SecretFoldersResource(http, as);
+    this.secretImports = new SecretImportsResource(http, as);
+    this.pki = {
+      ca: new PkiCaResource(http, as),
+      templates: new PkiTemplatesResource(http, as),
+      alerts: new PkiAlertsResource(http, as),
+      certificates: new PkiCertificatesResource(http, as),
     };
-    this.projects = new ProjectsResource(http);
-    this.webhooks = new WebhooksResource(http);
-    this.secretSharing = new SecretSharingResource(http);
-    this.secrets = new SecretsResource(http);
-    this.kms = new KmsResource(http);
-    this.integrationAuth = new IntegrationAuthResource(http);
-    this.appConnections = new AppConnectionsResource(http);
-    this.secretSyncs = new SecretSyncsResource(http);
-    this.admin = new AdminResource(http);
-    this.orgAdmin = new OrgAdminResource(http);
+    this.secretTags = new SecretTagsResource(http, as);
+    this.identities = new IdentitiesResource(http, as);
+    this.identityAccessTokens = new IdentityAccessTokensResource(http, as);
+
+    const identityAuthResources = {
+      universal: new IdentityUniversalAuthResource(http, as),
+      token: new IdentityTokenAuthResource(http, as),
+      aws: new IdentityAwsAuthResource(http, as),
+      gcp: new IdentityGcpAuthResource(http, as),
+      azure: new IdentityAzureAuthResource(http, as),
+      kubernetes: new IdentityKubernetesAuthResource(http, as),
+      oidc: new IdentityOidcAuthResource(http, as),
+      jwt: new IdentityJwtAuthResource(http, as),
+      ldap: new IdentityLdapAuthResource(http, as),
+      tlsCert: new IdentityTlsCertAuthResource(http, as),
+      oci: new IdentityOciAuthResource(http, as),
+      alicloud: new IdentityAlicloudAuthResource(http, as),
+    };
+    this.identityAuth = identityAuthResources;
+
+    this._authManager = new AuthManager(this._authState, identityAuthResources);
+
+    this.projects = new ProjectsResource(http, as);
+    this.webhooks = new WebhooksResource(http, as);
+    this.secretSharing = new SecretSharingResource(http, as);
+    this.secrets = new SecretsResource(http, as);
+    this.kms = new KmsResource(http, as);
+    this.integrationAuth = new IntegrationAuthResource(http, as);
+    this.appConnections = new AppConnectionsResource(http, as);
+    this.secretSyncs = new SecretSyncsResource(http, as);
+    this.admin = new AdminResource(http, as);
+    this.orgAdmin = new OrgAdminResource(http, as);
+  }
+
+  async login(params: LoginParams): Promise<LoginResponse> {
+    return this._authManager.login(params);
+  }
+
+  get isAuthenticated(): boolean {
+    return this._authState.isAuthenticated;
+  }
+
+  get authMode(): AuthMode | null {
+    return this._authState.mode as AuthMode | null;
+  }
+
+  logout(): void {
+    this._authState.clearAuth();
   }
 }

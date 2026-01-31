@@ -38,3 +38,4 @@ export * from "./app-connections";
 export * from "./secret-syncs";
 export * from "./admin";
 export * from "./org-admin";
+export * from "./auth-modes";

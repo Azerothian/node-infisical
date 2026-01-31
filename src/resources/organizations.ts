@@ -1,4 +1,6 @@
 import { BaseResource } from "./base";
+import type { HttpClient } from "../http";
+import type { AuthState } from "../auth-state";
 import type {
   ListMembershipsParams,
   ListMembershipsResponse,
@@ -22,9 +24,13 @@ import type {
 } from "../types/organizations";
 
 export class OrganizationsResource extends BaseResource {
+  constructor(http: HttpClient, authState: AuthState) {
+    super(http, authState, "organizations");
+  }
   async listMemberships(
     params: ListMembershipsParams
   ): Promise<ListMembershipsResponse> {
+    this.requireAuth();
     return this.http.get<ListMembershipsResponse>(
       `/organizations/${encodeURIComponent(params.orgId)}/memberships`
     );
@@ -33,6 +39,7 @@ export class OrganizationsResource extends BaseResource {
   async listProjects(
     params: ListOrgProjectsParams
   ): Promise<ListOrgProjectsResponse> {
+    this.requireAuth();
     return this.http.get<ListOrgProjectsResponse>(
       `/organizations/${encodeURIComponent(params.orgId)}/workspaces`
     );
@@ -41,6 +48,7 @@ export class OrganizationsResource extends BaseResource {
   async getMembership(
     params: GetMembershipParams
   ): Promise<GetMembershipResponse> {
+    this.requireAuth();
     return this.http.get<GetMembershipResponse>(
       `/organizations/${encodeURIComponent(params.orgId)}/memberships/${encodeURIComponent(params.membershipId)}`
     );
@@ -49,6 +57,7 @@ export class OrganizationsResource extends BaseResource {
   async updateMembership(
     params: UpdateMembershipParams
   ): Promise<UpdateMembershipResponse> {
+    this.requireAuth();
     const { orgId, membershipId, ...body } = params;
     return this.http.patch<UpdateMembershipResponse>(
       `/organizations/${encodeURIComponent(orgId)}/memberships/${encodeURIComponent(membershipId)}`,
@@ -59,6 +68,7 @@ export class OrganizationsResource extends BaseResource {
   async deleteMembership(
     params: DeleteMembershipParams
   ): Promise<DeleteMembershipResponse> {
+    this.requireAuth();
     return this.http.delete<DeleteMembershipResponse>(
       `/organizations/${encodeURIComponent(params.orgId)}/memberships/${encodeURIComponent(params.membershipId)}`
     );
@@ -67,6 +77,7 @@ export class OrganizationsResource extends BaseResource {
   async bulkDeleteMemberships(
     params: BulkDeleteMembershipsParams
   ): Promise<BulkDeleteMembershipsResponse> {
+    this.requireAuth();
     const { orgId, ...body } = params;
     return this.http.delete<BulkDeleteMembershipsResponse>(
       `/organizations/${encodeURIComponent(orgId)}/memberships`,
@@ -77,6 +88,7 @@ export class OrganizationsResource extends BaseResource {
   async listProjectMembershipsByOrgMembership(
     params: ListProjectMembershipsByOrgMembershipParams
   ): Promise<ListProjectMembershipsByOrgMembershipResponse> {
+    this.requireAuth();
     return this.http.get<ListProjectMembershipsByOrgMembershipResponse>(
       `/organizations/${encodeURIComponent(params.orgId)}/memberships/${encodeURIComponent(params.membershipId)}/project-memberships`
     );
@@ -85,6 +97,7 @@ export class OrganizationsResource extends BaseResource {
   async create(
     params: CreateOrganizationParams
   ): Promise<CreateOrganizationResponse> {
+    this.requireAuth();
     return this.http.post<CreateOrganizationResponse>(
       "/organizations",
       params
@@ -94,12 +107,14 @@ export class OrganizationsResource extends BaseResource {
   async delete(
     params: DeleteOrganizationParams
   ): Promise<DeleteOrganizationResponse> {
+    this.requireAuth();
     return this.http.delete<DeleteOrganizationResponse>(
       `/organizations/${encodeURIComponent(params.orgId)}`
     );
   }
 
   async upgradePrivilegeSystem(): Promise<UpgradePrivilegeSystemResponse> {
+    this.requireAuth();
     return this.http.post<UpgradePrivilegeSystemResponse>(
       "/organizations/privilege-system-upgrade"
     );

@@ -6,12 +6,21 @@ A TypeScript SDK for the [Infisical](https://infisical.com) API. Provides typed 
 - Supports Node.js 18+
 - Full TypeScript type definitions
 - ESM and CommonJS builds
+- Two-step authentication with auto-renewal
 
 ## Table of Contents
 
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Authentication](#authentication)
+  - [Login Methods](#login-methods)
+  - [Auth Modes & Permissions](#auth-modes--permissions)
+  - [Auto-Renewal](#auto-renewal)
+  - [Auth State Inspection](#auth-state-inspection)
+- [Architecture](#architecture)
+  - [Login Flow](#login-flow)
+  - [Auto-Renewal Flow](#auto-renewal-flow)
+  - [Auth Mode Check Flow](#auth-mode-check-flow)
 - [Configuration](#configuration)
 - [Error Handling](#error-handling)
 - [API Reference](#api-reference)
@@ -35,6 +44,7 @@ A TypeScript SDK for the [Infisical](https://infisical.com) API. Provides typed 
   - [PKI Certificate Authorities](#pki-certificate-authorities)
   - [PKI Certificate Templates](#pki-certificate-templates)
   - [PKI Alerts](#pki-alerts)
+  - [PKI Certificates](#pki-certificates)
   - [KMS](#kms)
   - [Integration Auth](#integration-auth)
   - [App Connections](#app-connections)
@@ -54,95 +64,192 @@ npm install node-infisical
 ```typescript
 import { InfisicalClient } from "node-infisical";
 
-// Authenticate with a machine identity access token (recommended for M2M)
-const client = new InfisicalClient({
-  auth: {
-    mode: "identityAccessToken",
-    accessToken: process.env.INFISICAL_TOKEN!,
-  },
+const client = new InfisicalClient();
+
+await client.login({
+  universalAuth: { clientId: "YOUR_CLIENT_ID", clientSecret: "YOUR_CLIENT_SECRET" }
 });
 
-// List secret folders in a project environment
-const folders = await client.secretFolders.list({
+const secrets = await client.secrets.list({
   projectId: "my-project-id",
   environment: "production",
-  path: "/",
 });
 
-console.log(folders);
+console.log(secrets);
 ```
 
 ## Authentication
 
-The SDK supports four authentication modes. Pass one to the `auth` field when creating the client.
+The SDK uses a **two-step authentication** model. First, construct the client. Then, call `client.login()` with one of 12 identity auth methods. The returned access token is stored internally and sent automatically with every subsequent request.
 
-### Identity Access Token (recommended for machine-to-machine)
+### Login Methods
 
-Use a machine identity access token obtained from one of the identity auth login methods. This is the recommended approach for server-side and CI/CD usage.
-
-```typescript
-const client = new InfisicalClient({
-  auth: {
-    mode: "identityAccessToken",
-    accessToken: "your-access-token",
-  },
-});
-```
-
-Header sent: `Authorization: Bearer {accessToken}`
-
-### JWT (user session)
-
-Use a JWT token obtained from user login. Suitable for user-facing applications where you have a logged-in session.
+Pass exactly one auth method key to `client.login()`:
 
 ```typescript
-const client = new InfisicalClient({
-  auth: {
-    mode: "jwt",
-    token: "your-jwt-token",
-  },
-});
+// Universal Auth (client ID + secret)
+await client.login({ universalAuth: { clientId: "...", clientSecret: "..." } });
+
+// Token Auth
+await client.login({ tokenAuth: { identityId: "..." } });
+
+// AWS Auth
+await client.login({ awsAuth: { identityId: "...", iamHttpRequestMethod: "...", iamRequestBody: "...", iamRequestHeaders: "..." } });
+
+// GCP Auth
+await client.login({ gcpAuth: { identityId: "...", jwt: "..." } });
+
+// Azure Auth
+await client.login({ azureAuth: { identityId: "...", jwt: "..." } });
+
+// Kubernetes Auth
+await client.login({ kubernetesAuth: { identityId: "...", jwt: "..." } });
+
+// OIDC Auth
+await client.login({ oidcAuth: { identityId: "...", jwt: "..." } });
+
+// JWT Auth
+await client.login({ jwtAuth: { identityId: "...", jwt: "..." } });
+
+// LDAP Auth
+await client.login({ ldapAuth: { identityId: "...", username: "...", password: "..." } });
+
+// TLS Certificate Auth
+await client.login({ tlsCertAuth: { identityId: "...", clientCertificate: "..." } });
+
+// OCI Auth
+await client.login({ ociAuth: { identityId: "...", userOcid: "...", requestHeaders: "..." } });
+
+// AliCloud Auth
+await client.login({ alicloudAuth: { identityId: "...", stsToken: "...", identityArn: "..." } });
 ```
 
-Header sent: `Authorization: Bearer {token}`
+### Auth Modes & Permissions
 
-### API Key (user)
+Each resource category in the SDK is restricted to a set of allowed auth modes. If you call a resource method with an incompatible mode, the SDK throws an `AuthenticationError` before making any network request.
 
-Use a user API key generated from the Infisical dashboard.
+| Resource Category | Allowed Auth Modes |
+|---|---|
+| `secrets`, `secretFolders`, `secretImports` | IAT, JWT, ST |
+| `projects`, `organizations`, `organizationIdentities` | IAT, JWT |
+| `identities`, `identityAuth`, `identityAccessTokens` | IAT, JWT |
+| `pki`, `kms`, `secretTags` | IAT, JWT |
+| `appConnections`, `secretSyncs`, `integrationAuth` | IAT, JWT |
+| `admin`, `orgAdmin` | JWT only |
+| `secretSharing`, `webhooks` | JWT only |
+| `users`, `mfa`, `mfaSessions` | JWT only |
+| `serviceTokens`, `password` | JWT only |
+
+**IAT** = Identity Access Token (set by `client.login()`), **JWT** = User JWT, **ST** = Service Token (deprecated).
 
 ```typescript
-const client = new InfisicalClient({
-  auth: {
-    mode: "apiKey",
-    apiKey: "your-api-key",
-  },
-});
+import { AuthenticationError } from "node-infisical";
+
+try {
+  // login() sets mode to "identityAccessToken"
+  await client.login({ universalAuth: { clientId: "...", clientSecret: "..." } });
+  // admin requires JWT -- this will throw
+  await client.admin.getConfig();
+} catch (error) {
+  if (error instanceof AuthenticationError) {
+    console.error(`Auth mode "${error.currentMode}" not allowed`);
+    console.error("Allowed modes:", error.allowedModes);
+  }
+}
 ```
 
-Header sent: `X-API-KEY: {apiKey}`
+### Auto-Renewal
 
-### Service Token (deprecated)
+When you authenticate via `client.login()`, the SDK stores the credentials and the token's `expiresIn` value. If a request is made within **30 seconds** of the token's expiry, the SDK transparently re-authenticates using the same credentials that were originally passed to `login()`.
 
-Service tokens are deprecated in favor of machine identity access tokens. Included for backward compatibility.
+Concurrent requests that hit the renewal window share a single renewal promise, so only one re-authentication call is made regardless of how many requests are in flight.
+
+### Auth State Inspection
 
 ```typescript
-const client = new InfisicalClient({
-  auth: {
-    mode: "serviceToken",
-    serviceToken: "your-service-token",
-  },
-});
+client.isAuthenticated  // true if login() has been called and not yet logged out
+client.authMode         // "identityAccessToken" | "jwt" | "apiKey" | "serviceToken" | null
+client.logout()         // clears auth state, token, and renewal function
 ```
 
-Header sent: `Authorization: Bearer {serviceToken}`
+## Architecture
+
+### Login Flow
+
+```mermaid
+sequenceDiagram
+    participant App
+    participant Client as InfisicalClient
+    participant AM as AuthManager
+    participant IAR as Identity Auth Resource
+    participant API as Infisical API
+    participant AS as AuthState
+
+    App->>Client: new InfisicalClient({ baseUrl })
+    App->>Client: login({ universalAuth: { clientId, clientSecret } })
+    Client->>AM: login(params)
+    AM->>IAR: universal.login({ clientId, clientSecret })
+    IAR->>API: POST /api/v1/auth/universal-auth/login
+    API-->>IAR: { accessToken, expiresIn }
+    IAR-->>AM: LoginResponse
+    AM->>AS: setAuth({ mode: "identityAccessToken", accessToken }, expiresIn)
+    AM->>AS: setRenewFn(loginFn)
+    AM-->>Client: LoginResponse
+    Client-->>App: LoginResponse
+```
+
+### Auto-Renewal Flow
+
+```mermaid
+sequenceDiagram
+    participant App
+    participant Resource as SecretsResource
+    participant HTTP as HttpClient
+    participant AS as AuthState
+    participant IAR as Identity Auth Resource
+    participant API as Infisical API
+
+    App->>Resource: secrets.list({ projectId, environment })
+    Resource->>Resource: requireAuth()
+    Resource->>HTTP: get("/api/v4/secrets", query)
+    HTTP->>AS: ensureValid()
+
+    alt Token expired (within 30s of expiry)
+        AS->>IAR: loginFn() [re-authenticate]
+        IAR->>API: POST /api/v1/auth/.../login
+        API-->>IAR: { accessToken, expiresIn }
+        IAR-->>AS: LoginResponse
+        AS->>AS: setAuth(newToken, newExpiry)
+    end
+
+    AS-->>HTTP: valid
+    HTTP->>API: GET /api/v4/secrets (with Bearer token)
+    API-->>HTTP: secrets data
+    HTTP-->>Resource: typed response
+    Resource-->>App: ListSecretsResponse
+```
+
+### Auth Mode Check Flow
+
+```mermaid
+flowchart TD
+    A[Client calls resource method] --> B{requireAuth}
+    B --> C{Is authenticated?}
+    C -->|No| D[Throw AuthenticationError<br/>'Not authenticated']
+    C -->|Yes| E{Auth mode allowed<br/>for this resource?}
+    E -->|No| F[Throw AuthenticationError<br/>'Mode X not allowed']
+    E -->|Yes| G[Proceed with request]
+    G --> H{ensureValid}
+    H --> I{Token near expiry?}
+    I -->|Yes| J[Auto-renew token]
+    J --> K[Execute HTTP request]
+    I -->|No| K
+```
 
 ## Configuration
 
 ```typescript
 const client = new InfisicalClient({
-  // Required: authentication configuration
-  auth: { mode: "identityAccessToken", accessToken: "..." },
-
   // Optional: base URL (defaults to https://app.infisical.com)
   baseUrl: "https://self-hosted.example.com",
 
@@ -159,12 +266,13 @@ const client = new InfisicalClient({
 
 ## Error Handling
 
-All API errors are thrown as typed error classes. Network-level failures throw `InfisicalNetworkError`.
+All API errors are thrown as typed error classes. Network-level failures throw `InfisicalNetworkError`. Auth-mode violations throw `AuthenticationError` before any network call is made.
 
 ```typescript
 import {
   InfisicalApiError,
   InfisicalNetworkError,
+  AuthenticationError,
   BadRequestError,
   UnauthorizedError,
   ForbiddenError,
@@ -177,7 +285,10 @@ import {
 try {
   await client.secretFolders.getById({ id: "non-existent" });
 } catch (error) {
-  if (error instanceof NotFoundError) {
+  if (error instanceof AuthenticationError) {
+    console.error(`Auth mode "${error.currentMode}" not allowed`);
+    console.error("Allowed modes:", error.allowedModes);
+  } else if (error instanceof NotFoundError) {
     console.error("Folder not found:", error.message);
     console.error("Request ID:", error.requestId);
   } else if (error instanceof UnauthorizedError) {
@@ -194,6 +305,7 @@ try {
 
 | Error Class | HTTP Status | Description |
 |---|---|---|
+| `AuthenticationError` | N/A | Not authenticated, or auth mode not allowed for resource |
 | `BadRequestError` | 400 | Malformed request |
 | `UnauthorizedError` | 401 | Missing or invalid credentials |
 | `ForbiddenError` | 403 | Insufficient permissions |
@@ -395,20 +507,24 @@ All identity auth sub-resources are accessed via `client.identityAuth.<provider>
 ```typescript
 import { InfisicalClient } from "node-infisical";
 
-// Step 1: Create an unauthenticated client to obtain a token
-const tempClient = new InfisicalClient({
-  auth: { mode: "identityAccessToken", accessToken: "" },
+const client = new InfisicalClient();
+
+// login() calls POST /api/v1/auth/universal-auth/login, stores the token,
+// and sets up auto-renewal.
+const response = await client.login({
+  universalAuth: {
+    clientId: "YOUR_CLIENT_ID",
+    clientSecret: "YOUR_CLIENT_SECRET",
+  },
 });
 
-// Note: login endpoints do not require authentication.
-// Use the HTTP client directly or create a helper for unauthenticated calls.
+console.log("Authenticated, token expires in", response.expiresIn, "seconds");
 
-// Step 2: Once you have a token, create the authenticated client
-const client = new InfisicalClient({
-  auth: {
-    mode: "identityAccessToken",
-    accessToken: "<token-from-login>",
-  },
+// All subsequent calls use the stored token automatically.
+const folders = await client.secretFolders.list({
+  projectId: "project-id",
+  environment: "production",
+  path: "/",
 });
 ```
 
@@ -578,13 +694,23 @@ Manage projects (workspaces), their environments, roles, tags, and trusted IPs.
 
 ### Secrets
 
-Retrieve secret access metadata.
+Manage secrets within project environments.
 
 **Accessor:** `client.secrets`
 
 | Method | HTTP | Path | Auth | Description |
 |---|---|---|---|---|
-| `getAccessList(params)` | GET | `/api/v1/secrets/{secretName}/access-list` | JWT, IAT | Get access list for a secret |
+| `list(params)` | GET | `/api/v4/secrets` | JWT, IAT, ST | List secrets in an environment |
+| `getByName(params)` | GET | `/api/v4/secrets/{secretName}` | JWT, IAT, ST | Get a secret by name |
+| `getById(params)` | GET | `/api/v4/secrets/id/{secretId}` | JWT, IAT, ST | Get a secret by ID |
+| `create(params)` | POST | `/api/v4/secrets/{secretName}` | JWT, IAT, ST | Create a secret |
+| `update(params)` | PATCH | `/api/v4/secrets/{secretName}` | JWT, IAT, ST | Update a secret |
+| `delete(params)` | DELETE | `/api/v4/secrets/{secretName}` | JWT, IAT, ST | Delete a secret |
+| `batchCreate(params)` | POST | `/api/v4/secrets/batch` | JWT, IAT, ST | Batch create secrets |
+| `batchUpdate(params)` | PATCH | `/api/v4/secrets/batch` | JWT, IAT, ST | Batch update secrets |
+| `batchDelete(params)` | DELETE | `/api/v4/secrets/batch` | JWT, IAT, ST | Batch delete secrets |
+| `move(params)` | POST | `/api/v4/secrets/move` | JWT, IAT, ST | Move secrets between paths |
+| `getAccessList(params)` | GET | `/api/v1/secrets/{secretName}/access-list` | JWT, IAT, ST | Get access list for a secret |
 
 ---
 
@@ -694,7 +820,7 @@ Manage project webhooks for secret change notifications.
 
 List PKI certificate authorities.
 
-**Accessor:** `client.pkiCa`
+**Accessor:** `client.pki.ca`
 
 | Method | HTTP | Path | Auth | Description |
 |---|---|---|---|---|
@@ -706,7 +832,7 @@ List PKI certificate authorities.
 
 Manage certificate templates for issuing and signing certificates.
 
-**Accessor:** `client.pkiTemplates`
+**Accessor:** `client.pki.templates`
 
 | Method | HTTP | Path | Auth | Description |
 |---|---|---|---|---|
@@ -724,7 +850,7 @@ Manage certificate templates for issuing and signing certificates.
 
 Manage PKI certificate expiration alerts.
 
-**Accessor:** `client.pkiAlerts`
+**Accessor:** `client.pki.alerts`
 
 | Method | HTTP | Path | Auth | Description |
 |---|---|---|---|---|
@@ -735,6 +861,26 @@ Manage PKI certificate expiration alerts.
 | `delete(params)` | DELETE | `/api/v2/pki/alerts/{alertId}` | JWT, IAT | Delete an alert |
 | `listCertificates(params)` | GET | `/api/v2/pki/alerts/{alertId}/certificates` | JWT, IAT | List certificates for an alert |
 | `previewCertificates(params)` | POST | `/api/v2/pki/alerts/preview/certificates` | JWT, IAT | Preview certificates matching alert criteria |
+
+---
+
+### PKI Certificates
+
+Manage PKI certificates: create, retrieve, renew, revoke, and configure.
+
+**Accessor:** `client.pki.certificates`
+
+| Method | HTTP | Path | Auth | Description |
+|---|---|---|---|---|
+| `create(params)` | POST | `/api/v1/pki/certificates` | JWT, IAT | Create a certificate |
+| `get(params)` | GET | `/api/v1/pki/certificates/{certificateId}` | JWT, IAT | Get certificate details |
+| `getBody(params)` | GET | `/api/v1/pki/certificates/{certificateId}/certificate` | JWT, IAT | Get certificate body (PEM) |
+| `getBundle(params)` | GET | `/api/v1/pki/certificates/{certificateId}/bundle` | JWT, IAT | Get certificate bundle |
+| `getPrivateKey(params)` | GET | `/api/v1/pki/certificates/{certificateId}/private-key` | JWT, IAT | Get certificate private key |
+| `renew(params)` | POST | `/api/v1/pki/certificates/{certificateId}/renew` | JWT, IAT | Renew a certificate |
+| `revoke(params)` | POST | `/api/v1/pki/certificates/{certificateId}/revoke` | JWT, IAT | Revoke a certificate |
+| `delete(params)` | DELETE | `/api/v1/pki/certificates/{certificateId}` | JWT, IAT | Delete a certificate |
+| `updateConfig(params)` | PATCH | `/api/v1/pki/certificates/{certificateId}/config` | JWT, IAT | Update certificate config |
 
 ---
 
