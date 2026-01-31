@@ -163,6 +163,17 @@ export class InfisicalClient {
     return this._authManager.login(params);
   }
 
+  /**
+   * Set a pre-existing access token directly (e.g., from bootstrap or external auth).
+   * This bypasses the login flow and sets the token directly on the auth state.
+   */
+  setAccessToken(accessToken: string, expiresIn?: number): void {
+    this._authState.setAuth(
+      { mode: "identityAccessToken", accessToken },
+      expiresIn
+    );
+  }
+
   get isAuthenticated(): boolean {
     return this._authState.isAuthenticated;
   }
