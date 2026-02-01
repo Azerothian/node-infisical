@@ -19,7 +19,7 @@ export class IdentityTlsCertAuthResource extends BaseResource {
     super(http, authState, "identityAuth");
   }
   async login(params: LoginTlsCertAuthParams): Promise<LoginTlsCertAuthResponse> {
-    return this.http.post<LoginTlsCertAuthResponse>(
+    return this.http.postNoAuth<LoginTlsCertAuthResponse>(
       "/api/v1/auth/tls-cert-auth/login",
       params
     );

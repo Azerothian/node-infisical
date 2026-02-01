@@ -12,12 +12,11 @@ import { SecretImportsResource } from "../src/resources/secret-imports";
 import { PkiCaResource } from "../src/resources/pki-ca";
 import { PkiTemplatesResource } from "../src/resources/pki-templates";
 import { PkiAlertsResource } from "../src/resources/pki-alerts";
+import { PkiCertificatesResource } from "../src/resources/pki-certificates";
 
 describe("InfisicalClient", () => {
-  it("constructs with JWT auth and default base URL", () => {
-    const client = new InfisicalClient({
-      auth: { mode: "jwt", token: "test-token" },
-    });
+  it("constructs with default base URL and exposes all resources", () => {
+    const client = new InfisicalClient();
 
     expect(client.mfa).toBeInstanceOf(MfaResource);
     expect(client.mfaSessions).toBeInstanceOf(MfaSessionsResource);
@@ -28,39 +27,48 @@ describe("InfisicalClient", () => {
     expect(client.organizationIdentities).toBeInstanceOf(OrganizationIdentitiesResource);
     expect(client.secretFolders).toBeInstanceOf(SecretFoldersResource);
     expect(client.secretImports).toBeInstanceOf(SecretImportsResource);
-    expect(client.pkiCa).toBeInstanceOf(PkiCaResource);
-    expect(client.pkiTemplates).toBeInstanceOf(PkiTemplatesResource);
-    expect(client.pkiAlerts).toBeInstanceOf(PkiAlertsResource);
+    expect(client.pki.ca).toBeInstanceOf(PkiCaResource);
+    expect(client.pki.templates).toBeInstanceOf(PkiTemplatesResource);
+    expect(client.pki.alerts).toBeInstanceOf(PkiAlertsResource);
+    expect(client.pki.certificates).toBeInstanceOf(PkiCertificatesResource);
   });
 
-  it("constructs with API key auth", () => {
-    const client = new InfisicalClient({
-      auth: { mode: "apiKey", apiKey: "my-api-key" },
-    });
+  it("starts unauthenticated", () => {
+    const client = new InfisicalClient();
 
-    expect(client.mfa).toBeInstanceOf(MfaResource);
+    expect(client.isAuthenticated).toBe(false);
+    expect(client.authMode).toBeNull();
   });
 
-  it("constructs with service token auth", () => {
-    const client = new InfisicalClient({
-      auth: { mode: "serviceToken", serviceToken: "st.xxx" },
-    });
+  it("sets identity access token via setAccessToken", () => {
+    const client = new InfisicalClient();
+    client.setAccessToken("my-access-token");
 
-    expect(client.mfa).toBeInstanceOf(MfaResource);
+    expect(client.isAuthenticated).toBe(true);
+    expect(client.authMode).toBe("identityAccessToken");
   });
 
-  it("constructs with identity access token auth", () => {
-    const client = new InfisicalClient({
-      auth: { mode: "identityAccessToken", accessToken: "iat-xxx" },
-    });
+  it("sets JWT token via setJwtToken", () => {
+    const client = new InfisicalClient();
+    client.setJwtToken("my-jwt-token");
 
-    expect(client.mfa).toBeInstanceOf(MfaResource);
+    expect(client.isAuthenticated).toBe(true);
+    expect(client.authMode).toBe("jwt");
+  });
+
+  it("logout clears auth state", () => {
+    const client = new InfisicalClient();
+    client.setAccessToken("token");
+    expect(client.isAuthenticated).toBe(true);
+
+    client.logout();
+    expect(client.isAuthenticated).toBe(false);
+    expect(client.authMode).toBeNull();
   });
 
   it("accepts custom base URL and timeout", () => {
     const client = new InfisicalClient({
       baseUrl: "https://self-hosted.example.com",
-      auth: { mode: "jwt", token: "t" },
       timeout: 60_000,
     });
 

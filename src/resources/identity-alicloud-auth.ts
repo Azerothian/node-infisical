@@ -19,7 +19,7 @@ export class IdentityAlicloudAuthResource extends BaseResource {
     super(http, authState, "identityAuth");
   }
   async login(params: LoginAlicloudAuthParams): Promise<LoginAlicloudAuthResponse> {
-    return this.http.post<LoginAlicloudAuthResponse>(
+    return this.http.postNoAuth<LoginAlicloudAuthResponse>(
       "/api/v1/auth/alicloud-auth/login",
       params
     );

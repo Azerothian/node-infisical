@@ -180,6 +180,14 @@ export interface ListAdminIdentitiesResponse {
   totalCount: number;
 }
 
+export interface GrantIdentitySuperAdminParams {
+  identityId: string;
+}
+
+export interface GrantIdentitySuperAdminResponse {
+  identity: Record<string, unknown>;
+}
+
 export interface RevokeIdentitySuperAdminParams {
   identityId: string;
 }

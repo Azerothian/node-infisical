@@ -20,7 +20,7 @@ export class IdentityJwtAuthResource extends BaseResource {
   }
 
   async login(params: LoginJwtAuthParams): Promise<LoginJwtAuthResponse> {
-    return this.http.post<LoginJwtAuthResponse>(
+    return this.http.postNoAuth<LoginJwtAuthResponse>(
       "/api/v1/auth/jwt-auth/login",
       params
     );

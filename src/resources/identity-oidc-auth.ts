@@ -20,7 +20,7 @@ export class IdentityOidcAuthResource extends BaseResource {
   }
 
   async login(params: LoginOidcAuthParams): Promise<LoginOidcAuthResponse> {
-    return this.http.post<LoginOidcAuthResponse>(
+    return this.http.postNoAuth<LoginOidcAuthResponse>(
       "/api/v1/auth/oidc-auth/login",
       params
     );

@@ -164,12 +164,23 @@ export class InfisicalClient {
   }
 
   /**
-   * Set a pre-existing access token directly (e.g., from bootstrap or external auth).
+   * Set a pre-existing identity access token directly (e.g., from external auth).
    * This bypasses the login flow and sets the token directly on the auth state.
    */
   setAccessToken(accessToken: string, expiresIn?: number): void {
     this._authState.setAuth(
       { mode: "identityAccessToken", accessToken },
+      expiresIn
+    );
+  }
+
+  /**
+   * Set a pre-existing JWT token directly (e.g., from bootstrap or user login).
+   * Use this for admin operations that require JWT auth mode.
+   */
+  setJwtToken(token: string, expiresIn?: number): void {
+    this._authState.setAuth(
+      { mode: "jwt", token },
       expiresIn
     );
   }

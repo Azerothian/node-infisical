@@ -31,6 +31,8 @@ import type {
   JoinOrganizationResponse,
   ListAdminIdentitiesParams,
   ListAdminIdentitiesResponse,
+  GrantIdentitySuperAdminParams,
+  GrantIdentitySuperAdminResponse,
   RevokeIdentitySuperAdminParams,
   RevokeIdentitySuperAdminResponse,
   GetAdminIntegrationsResponse,
@@ -53,7 +55,7 @@ export class AdminResource extends BaseResource {
   // Bootstrap & Signup
 
   async bootstrap(params: BootstrapInstanceParams): Promise<BootstrapInstanceResponse> {
-    return this.http.post<BootstrapInstanceResponse>("/api/v1/admin/bootstrap", params);
+    return this.http.postNoAuth<BootstrapInstanceResponse>("/api/v1/admin/bootstrap", params);
   }
 
   async signup(params: AdminSignUpParams): Promise<AdminSignUpResponse> {
@@ -165,6 +167,13 @@ export class AdminResource extends BaseResource {
     return this.http.get<ListAdminIdentitiesResponse>(
       "/api/v1/admin/identity-management/identities",
       { ...params } as Record<string, unknown>
+    );
+  }
+
+  async grantIdentitySuperAdmin(params: GrantIdentitySuperAdminParams): Promise<GrantIdentitySuperAdminResponse> {
+    this.requireAuth();
+    return this.http.patch<GrantIdentitySuperAdminResponse>(
+      `/api/v1/admin/identity-management/identities/${encodeURIComponent(params.identityId)}/super-admin-access`
     );
   }
 

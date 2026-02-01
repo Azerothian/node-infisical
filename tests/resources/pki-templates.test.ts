@@ -3,11 +3,12 @@ import { InfisicalClient } from "../../src/client";
 import { createMockFetch } from "../helpers";
 
 function createTestClient(mockFetch: ReturnType<typeof createMockFetch>["mockFetch"]) {
-  return new InfisicalClient({
-    auth: { mode: "jwt", token: "test" },
+  const client = new InfisicalClient({
     baseUrl: "https://test.infisical.com",
     fetch: mockFetch as unknown as typeof globalThis.fetch,
   });
+  client.setJwtToken("test");
+  return client;
 }
 
 describe("PkiTemplatesResource", () => {
@@ -18,7 +19,7 @@ describe("PkiTemplatesResource", () => {
     ]);
     const client = createTestClient(mockFetch);
 
-    const result = await client.pkiTemplates.create({
+    const result = await client.pki.templates.create({
       name: "my-template",
       caName: "my-ca",
       projectId: "proj-1",
@@ -39,7 +40,7 @@ describe("PkiTemplatesResource", () => {
     ]);
     const client = createTestClient(mockFetch);
 
-    const result = await client.pkiTemplates.update({
+    const result = await client.pki.templates.update({
       templateName: "my-template",
       caName: "my-ca",
       projectId: "proj-1",
@@ -60,7 +61,7 @@ describe("PkiTemplatesResource", () => {
     ]);
     const client = createTestClient(mockFetch);
 
-    await client.pkiTemplates.delete({
+    await client.pki.templates.delete({
       templateName: "my-template",
       projectId: "proj-1",
     });
@@ -76,7 +77,7 @@ describe("PkiTemplatesResource", () => {
     ]);
     const client = createTestClient(mockFetch);
 
-    const result = await client.pkiTemplates.get({
+    const result = await client.pki.templates.get({
       templateName: "my-template",
       projectId: "proj-1",
     });
@@ -93,7 +94,7 @@ describe("PkiTemplatesResource", () => {
     ]);
     const client = createTestClient(mockFetch);
 
-    const result = await client.pkiTemplates.list({
+    const result = await client.pki.templates.list({
       projectId: "proj-1",
       limit: 10,
       offset: 0,
@@ -117,7 +118,7 @@ describe("PkiTemplatesResource", () => {
     ]);
     const client = createTestClient(mockFetch);
 
-    const result = await client.pkiTemplates.issueCertificate({
+    const result = await client.pki.templates.issueCertificate({
       templateName: "my-template",
       projectId: "proj-1",
       commonName: "test.example.com",
@@ -141,7 +142,7 @@ describe("PkiTemplatesResource", () => {
     ]);
     const client = createTestClient(mockFetch);
 
-    const result = await client.pkiTemplates.signCertificate({
+    const result = await client.pki.templates.signCertificate({
       templateName: "my-template",
       projectId: "proj-1",
       ttl: "30d",

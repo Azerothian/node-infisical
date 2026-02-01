@@ -19,7 +19,7 @@ export class IdentityLdapAuthResource extends BaseResource {
     super(http, authState, "identityAuth");
   }
   async login(params: LoginLdapAuthParams): Promise<LoginLdapAuthResponse> {
-    return this.http.post<LoginLdapAuthResponse>(
+    return this.http.postNoAuth<LoginLdapAuthResponse>(
       "/api/v1/auth/ldap-auth/login",
       params
     );

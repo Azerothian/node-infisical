@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { HttpClient } from "../src/http";
+import { AuthState } from "../src/auth-state";
+import type { AuthConfig } from "../src/types/auth";
 import {
   InfisicalApiError,
   InfisicalNetworkError,
@@ -8,22 +10,40 @@ import {
 } from "../src/errors";
 import { createMockFetch, createErrorFetch } from "./helpers";
 
+function createAuthState(
+  authMode: "jwt" | "apiKey" | "serviceToken" | "identityAccessToken" = "jwt"
+): AuthState {
+  const authState = new AuthState();
+  const auth: AuthConfig =
+    authMode === "jwt"
+      ? { mode: "jwt", token: "test-jwt" }
+      : authMode === "apiKey"
+        ? { mode: "apiKey", apiKey: "test-key" }
+        : authMode === "serviceToken"
+          ? { mode: "serviceToken", serviceToken: "st-token" }
+          : { mode: "identityAccessToken", accessToken: "iat-token" };
+  authState.setAuth(auth);
+  return authState;
+}
+
 function createClient(
   mockFetch: ReturnType<typeof createMockFetch>["mockFetch"],
   authMode: "jwt" | "apiKey" | "serviceToken" | "identityAccessToken" = "jwt"
 ) {
-  const auth =
-    authMode === "jwt"
-      ? ({ mode: "jwt", token: "test-jwt" } as const)
-      : authMode === "apiKey"
-        ? ({ mode: "apiKey", apiKey: "test-key" } as const)
-        : authMode === "serviceToken"
-          ? ({ mode: "serviceToken", serviceToken: "st-token" } as const)
-          : ({ mode: "identityAccessToken", accessToken: "iat-token" } as const);
-
   return new HttpClient({
     baseUrl: "https://app.infisical.com",
-    auth,
+    authState: createAuthState(authMode),
+    fetch: mockFetch as unknown as typeof globalThis.fetch,
+    timeout: 5000,
+  });
+}
+
+function createUnauthenticatedClient(
+  mockFetch: ReturnType<typeof createMockFetch>["mockFetch"]
+) {
+  return new HttpClient({
+    baseUrl: "https://app.infisical.com",
+    authState: new AuthState(),
     fetch: mockFetch as unknown as typeof globalThis.fetch,
     timeout: 5000,
   });
@@ -165,11 +185,61 @@ describe("HttpClient", () => {
     const mockFetch = createErrorFetch(new TypeError("fetch failed"));
     const client = new HttpClient({
       baseUrl: "https://app.infisical.com",
-      auth: { mode: "jwt", token: "t" },
+      authState: createAuthState(),
       fetch: mockFetch as unknown as typeof globalThis.fetch,
       timeout: 5000,
     });
 
     await expect(client.get("/test")).rejects.toThrow(InfisicalNetworkError);
+  });
+
+  describe("postNoAuth", () => {
+    it("skips auth header when using postNoAuth", async () => {
+      const { mockFetch, calls } = createMockFetch([
+        { status: 200, body: { accessToken: "new-token" } },
+      ]);
+      const client = createClient(mockFetch);
+
+      const result = await client.postNoAuth<{ accessToken: string }>(
+        "/api/v1/auth/universal-auth/login",
+        { clientId: "id", clientSecret: "secret" }
+      );
+
+      expect(result).toEqual({ accessToken: "new-token" });
+      expect(calls).toHaveLength(1);
+      expect(calls[0].init.method).toBe("POST");
+      const headers = calls[0].init.headers as Record<string, string>;
+      expect(headers["Authorization"]).toBeUndefined();
+    });
+
+    it("works without any auth configured", async () => {
+      const { mockFetch, calls } = createMockFetch([
+        { status: 200, body: { token: "boot-token" } },
+      ]);
+      const client = createUnauthenticatedClient(mockFetch);
+
+      const result = await client.postNoAuth<{ token: string }>(
+        "/api/v1/admin/bootstrap",
+        { email: "admin@test.com" }
+      );
+
+      expect(result).toEqual({ token: "boot-token" });
+      expect(calls).toHaveLength(1);
+      expect(calls[0].init.body).toBe(
+        JSON.stringify({ email: "admin@test.com" })
+      );
+    });
+
+    it("sends body and query params correctly", async () => {
+      const { mockFetch, calls } = createMockFetch([
+        { status: 200, body: { ok: true } },
+      ]);
+      const client = createClient(mockFetch);
+
+      await client.postNoAuth("/api/v1/auth/login", { data: 1 }, { q: "val" });
+
+      expect(calls[0].url).toContain("?q=val");
+      expect(calls[0].init.body).toBe(JSON.stringify({ data: 1 }));
+    });
   });
 });

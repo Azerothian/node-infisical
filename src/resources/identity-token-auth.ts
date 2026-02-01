@@ -30,7 +30,7 @@ export class IdentityTokenAuthResource extends BaseResource {
   }
 
   async login(params: LoginTokenAuthParams): Promise<LoginTokenAuthResponse> {
-    return this.http.post<LoginTokenAuthResponse>(
+    return this.http.postNoAuth<LoginTokenAuthResponse>(
       "/api/v1/auth/token/login",
       params
     );

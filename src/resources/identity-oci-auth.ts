@@ -19,7 +19,7 @@ export class IdentityOciAuthResource extends BaseResource {
     super(http, authState, "identityAuth");
   }
   async login(params: LoginOciAuthParams): Promise<LoginOciAuthResponse> {
-    return this.http.post<LoginOciAuthResponse>(
+    return this.http.postNoAuth<LoginOciAuthResponse>(
       "/api/v1/auth/oci-auth/login",
       params
     );

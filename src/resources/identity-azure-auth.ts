@@ -20,7 +20,7 @@ export class IdentityAzureAuthResource extends BaseResource {
   }
 
   async login(params: LoginAzureAuthParams): Promise<LoginAzureAuthResponse> {
-    return this.http.post<LoginAzureAuthResponse>(
+    return this.http.postNoAuth<LoginAzureAuthResponse>(
       "/api/v1/auth/azure-auth/login",
       params
     );

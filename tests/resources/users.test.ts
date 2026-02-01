@@ -4,11 +4,12 @@ import { createMockFetch } from "../helpers";
 import { MfaMethod } from "../../src/types/common";
 
 function createTestClient(mockFetch: ReturnType<typeof createMockFetch>["mockFetch"]) {
-  return new InfisicalClient({
-    auth: { mode: "jwt", token: "test" },
+  const client = new InfisicalClient({
     baseUrl: "https://test.infisical.com",
     fetch: mockFetch as unknown as typeof globalThis.fetch,
   });
+  client.setJwtToken("test");
+  return client;
 }
 
 describe("UsersResource", () => {

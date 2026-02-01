@@ -3,11 +3,12 @@ import { InfisicalClient } from "../../src/client";
 import { createMockFetch } from "../helpers";
 
 function createTestClient(mockFetch: ReturnType<typeof createMockFetch>["mockFetch"]) {
-  return new InfisicalClient({
-    auth: { mode: "jwt", token: "test" },
+  const client = new InfisicalClient({
     baseUrl: "https://test.infisical.com",
     fetch: mockFetch as unknown as typeof globalThis.fetch,
   });
+  client.setJwtToken("test");
+  return client;
 }
 
 describe("SecretImportsResource", () => {

@@ -20,7 +20,7 @@ export class IdentityGcpAuthResource extends BaseResource {
   }
 
   async login(params: LoginGcpAuthParams): Promise<LoginGcpAuthResponse> {
-    return this.http.post<LoginGcpAuthResponse>(
+    return this.http.postNoAuth<LoginGcpAuthResponse>(
       "/api/v1/auth/gcp-auth/login",
       params
     );

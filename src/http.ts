@@ -114,9 +114,12 @@ export class HttpClient {
       body?: unknown;
       query?: Record<string, unknown>;
       headers?: Record<string, string>;
+      skipAuth?: boolean;
     }
   ): Promise<T> {
-    await this.config.authState.ensureValid();
+    if (!options?.skipAuth) {
+      await this.config.authState.ensureValid();
+    }
     const prefix = path.startsWith("/api/") ? "" : "/api/v2";
     const url = `${this.config.baseUrl}${prefix}${path}${buildQueryString(options?.query)}`;
     const controller = new AbortController();
@@ -125,7 +128,7 @@ export class HttpClient {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       Accept: "application/json",
-      ...(this.config.authState.current ? getAuthHeader(this.config.authState.current) : {}),
+      ...(!options?.skipAuth && this.config.authState.current ? getAuthHeader(this.config.authState.current) : {}),
       ...this.config.headers,
       ...options?.headers,
     };
@@ -187,6 +190,14 @@ export class HttpClient {
     query?: Record<string, unknown>
   ): Promise<T> {
     return this.request<T>("POST", path, { body, query });
+  }
+
+  async postNoAuth<T>(
+    path: string,
+    body?: unknown,
+    query?: Record<string, unknown>
+  ): Promise<T> {
+    return this.request<T>("POST", path, { body, query, skipAuth: true });
   }
 
   async put<T>(

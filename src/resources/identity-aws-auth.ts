@@ -20,7 +20,7 @@ export class IdentityAwsAuthResource extends BaseResource {
   }
 
   async login(params: LoginAwsAuthParams): Promise<LoginAwsAuthResponse> {
-    return this.http.post<LoginAwsAuthResponse>(
+    return this.http.postNoAuth<LoginAwsAuthResponse>(
       "/api/v1/auth/aws-auth/login",
       params
     );

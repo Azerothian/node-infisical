@@ -28,7 +28,7 @@ export class IdentityUniversalAuthResource extends BaseResource {
   }
 
   async login(params: LoginUniversalAuthParams): Promise<LoginUniversalAuthResponse> {
-    return this.http.post<LoginUniversalAuthResponse>(
+    return this.http.postNoAuth<LoginUniversalAuthResponse>(
       "/api/v1/auth/universal-auth/login",
       params
     );

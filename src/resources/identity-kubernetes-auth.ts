@@ -20,7 +20,7 @@ export class IdentityKubernetesAuthResource extends BaseResource {
   }
 
   async login(params: LoginKubernetesAuthParams): Promise<LoginKubernetesAuthResponse> {
-    return this.http.post<LoginKubernetesAuthResponse>(
+    return this.http.postNoAuth<LoginKubernetesAuthResponse>(
       "/api/v1/auth/kubernetes-auth/login",
       params
     );
