@@ -1,4 +1,5 @@
 import { HttpClient } from "./http";
+import crossFetch from "cross-fetch";
 import type { FetchFunction } from "./http";
 import { AuthState } from "./auth-state";
 import type { LoginResponse } from "./auth-state";
@@ -103,7 +104,7 @@ export class InfisicalClient {
     const http = new HttpClient({
       baseUrl: config.baseUrl ?? "https://app.infisical.com",
       authState: this._authState,
-      fetch: config.fetch ?? fetch,
+      fetch: config.fetch ?? crossFetch,
       timeout: config.timeout ?? 30_000,
       headers: config.headers,
     });

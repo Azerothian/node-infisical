@@ -1,0 +1,49 @@
+name: Staging
+
+on:
+  push:
+    branches:
+      - staging
+
+permissions:
+  contents: write
+
+jobs:
+  staging:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run build
+
+      - name: Verify dist outputs
+        run: |
+          test -f dist/index.js
+          test -f dist/index.mjs
+          test -f dist/index.d.ts
+          test -f dist/index.d.mts
+
+      - name: Generate prerelease tag
+        id: tag
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          COMMIT_COUNT=$(git rev-list --count HEAD)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          TAG="v${VERSION}-staging.${COMMIT_COUNT}+${SHORT_SHA}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ${{ steps.tag.outputs.tag }}
+          prerelease: true
+          generate_release_notes: true

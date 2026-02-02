@@ -1,5 +1,5 @@
 {
-  "name": "node-infisical",
+  "name": "@azerothian/infisical",
   "version": "0.1.0",
   "description": "TypeScript SDK for Infisical v2 API",
   "main": "./dist/index.js",
@@ -20,6 +20,22 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "cross-fetch": "^4.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Azerothian/node-infisical.git"
+  },
+  "keywords": [
+    "infisical",
+    "secrets",
+    "sdk",
+    "api"
+  ],
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
@@ -28,7 +44,12 @@
     "test:e2e": "vitest run --config vitest.config.e2e.ts",
     "test:e2e:watch": "vitest --config vitest.config.e2e.ts",
     "e2e:up": "docker compose -f docker-compose.e2e.yml up -d",
-    "e2e:down": "docker compose -f docker-compose.e2e.yml down -v"
+    "e2e:down": "docker compose -f docker-compose.e2e.yml down -v",
+    "prepublishOnly": "npm run build",
+    "release": "./scripts/release.sh patch",
+    "release:patch": "./scripts/release.sh patch",
+    "release:minor": "./scripts/release.sh minor",
+    "release:major": "./scripts/release.sh major"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

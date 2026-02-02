@@ -1,4 +1,7 @@
-# node-infisical
+# @azerothian/infisical
+
+[![npm version](https://img.shields.io/npm/v/@azerothian/infisical.svg)](https://www.npmjs.com/package/@azerothian/infisical)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A TypeScript SDK for the [Infisical](https://infisical.com) API. Provides typed access to secrets management, identity authentication, PKI, KMS, and all other Infisical platform features.
 
@@ -23,6 +26,7 @@ A TypeScript SDK for the [Infisical](https://infisical.com) API. Provides typed 
   - [Auth Mode Check Flow](#auth-mode-check-flow)
 - [Configuration](#configuration)
 - [Error Handling](#error-handling)
+- [Releasing](#releasing)
 - [API Reference](#api-reference)
   - [MFA](#mfa)
   - [MFA Sessions](#mfa-sessions)
@@ -56,13 +60,13 @@ A TypeScript SDK for the [Infisical](https://infisical.com) API. Provides typed 
 ## Installation
 
 ```bash
-npm install node-infisical
+npm install @azerothian/infisical
 ```
 
 ## Quick Start
 
 ```typescript
-import { InfisicalClient } from "node-infisical";
+import { InfisicalClient } from "@azerothian/infisical";
 
 const client = new InfisicalClient();
 
@@ -143,7 +147,7 @@ Each resource category in the SDK is restricted to a set of allowed auth modes. 
 **IAT** = Identity Access Token (set by `client.login()`), **JWT** = User JWT, **ST** = Service Token (deprecated).
 
 ```typescript
-import { AuthenticationError } from "node-infisical";
+import { AuthenticationError } from "@azerothian/infisical";
 
 try {
   // login() sets mode to "identityAccessToken"
@@ -280,7 +284,7 @@ import {
   ValidationError,
   RateLimitError,
   InternalServerError,
-} from "node-infisical";
+} from "@azerothian/infisical";
 
 try {
   await client.secretFolders.getById({ id: "non-existent" });
@@ -315,6 +319,36 @@ try {
 | `InternalServerError` | 500 | Server-side error |
 | `InfisicalApiError` | Other | Catch-all for other HTTP error codes |
 | `InfisicalNetworkError` | N/A | Connection failure, timeout, DNS error |
+
+## Releasing
+
+Releases are handled by the release script which automates version bumping, git tagging, GitHub releases, and npm publishing.
+
+```bash
+# Patch release (0.1.0 -> 0.1.1)
+npm run release:patch
+
+# Minor release (0.1.0 -> 0.2.0)
+npm run release:minor
+
+# Major release (0.1.0 -> 1.0.0)
+npm run release:major
+```
+
+The release script (`scripts/release.sh`) performs the following steps:
+
+1. Validates clean working tree on `master` branch
+2. Runs the full test suite
+3. Bumps the version in `package.json` and creates a git commit + tag (`vX.Y.Z`)
+4. Builds the dist output
+5. Pushes the commit and tag to `origin`
+6. Creates a GitHub release with auto-generated release notes
+7. Publishes the package to npm
+
+**Prerequisites:**
+- Authenticated with npm (`npm login`)
+- Authenticated with GitHub CLI (`gh auth login`)
+- On the `master` branch with no uncommitted changes
 
 ---
 
@@ -505,7 +539,7 @@ All identity auth sub-resources are accessed via `client.identityAuth.<provider>
 **Example: Authenticate with Universal Auth**
 
 ```typescript
-import { InfisicalClient } from "node-infisical";
+import { InfisicalClient } from "@azerothian/infisical";
 
 const client = new InfisicalClient();
 
