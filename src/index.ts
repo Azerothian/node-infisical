@@ -15,7 +15,7 @@ export {
   AuthenticationError,
 } from "./errors";
 export { AuthState } from "./auth-state";
-export type { LoginResponse } from "./auth-state";
+export type { LoginResponse, RenewResult } from "./auth-state";
 export { AuthManager } from "./auth-manager";
 export type { LoginParams, IdentityAuthResources } from "./auth-manager";
 export * from "./types";

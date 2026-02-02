@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { InfisicalClient } from "../src/client";
 import { MfaResource } from "../src/resources/mfa";
 import { MfaSessionsResource } from "../src/resources/mfa-sessions";
@@ -73,5 +73,96 @@ describe("InfisicalClient", () => {
     });
 
     expect(client.mfa).toBeInstanceOf(MfaResource);
+  });
+
+  it("auto-renews JWT token when expired via renewFn", async () => {
+    vi.useFakeTimers();
+    try {
+      const renewFn = vi.fn().mockResolvedValue({
+        token: "renewed-jwt",
+        expiresIn: 3600,
+      });
+
+      const client = new InfisicalClient();
+      client.setJwtToken("original-jwt", 1, renewFn);
+
+      expect(client.authMode).toBe("jwt");
+
+      // Advance past the 30-second pre-expiry window
+      // expiresIn=1 means expires in 1 second, but renewal triggers 30s before
+      // so it should trigger immediately
+      vi.advanceTimersByTime(0);
+
+      // Access the internal auth state to trigger ensureValid
+      // We need to use the auth state directly since making HTTP requests
+      // requires a real fetch function
+      const authState = (client as any)._authState;
+      await authState.ensureValid();
+
+      expect(renewFn).toHaveBeenCalledTimes(1);
+      expect(authState.current).toEqual({ mode: "jwt", token: "renewed-jwt" });
+      expect(authState.mode).toBe("jwt");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("auto-renews access token when expired via renewFn", async () => {
+    vi.useFakeTimers();
+    try {
+      const renewFn = vi.fn().mockResolvedValue({
+        accessToken: "renewed-access-token",
+        expiresIn: 7200,
+      });
+
+      const client = new InfisicalClient();
+      client.setAccessToken("original-token", 1, renewFn);
+
+      expect(client.authMode).toBe("identityAccessToken");
+
+      const authState = (client as any)._authState;
+      await authState.ensureValid();
+
+      expect(renewFn).toHaveBeenCalledTimes(1);
+      expect(authState.current).toEqual({
+        mode: "identityAccessToken",
+        accessToken: "renewed-access-token",
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not auto-renew JWT without renewFn", async () => {
+    vi.useFakeTimers();
+    try {
+      const client = new InfisicalClient();
+      client.setJwtToken("my-jwt", 1);
+
+      const authState = (client as any)._authState;
+      await authState.ensureValid();
+
+      // Token unchanged — no renewFn means no renewal
+      expect(authState.current).toEqual({ mode: "jwt", token: "my-jwt" });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not auto-renew JWT without expiresIn", async () => {
+    const renewFn = vi.fn().mockResolvedValue({
+      token: "should-not-be-called",
+      expiresIn: 3600,
+    });
+
+    const client = new InfisicalClient();
+    client.setJwtToken("my-jwt", undefined, renewFn);
+
+    const authState = (client as any)._authState;
+    await authState.ensureValid();
+
+    // renewFn not called — no expiresIn means no expiry tracking
+    expect(renewFn).not.toHaveBeenCalled();
+    expect(authState.current).toEqual({ mode: "jwt", token: "my-jwt" });
   });
 });

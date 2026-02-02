@@ -168,22 +168,48 @@ export class InfisicalClient {
    * Set a pre-existing identity access token directly (e.g., from external auth).
    * This bypasses the login flow and sets the token directly on the auth state.
    */
-  setAccessToken(accessToken: string, expiresIn?: number): void {
+  setAccessToken(
+    accessToken: string,
+    expiresIn?: number,
+    renewFn?: () => Promise<{ accessToken: string; expiresIn: number }>
+  ): void {
     this._authState.setAuth(
       { mode: "identityAccessToken", accessToken },
       expiresIn
     );
+    if (renewFn) {
+      this._authState.setRenewFn(async () => {
+        const result = await renewFn();
+        return {
+          auth: { mode: "identityAccessToken" as const, accessToken: result.accessToken },
+          expiresIn: result.expiresIn,
+        };
+      });
+    }
   }
 
   /**
    * Set a pre-existing JWT token directly (e.g., from bootstrap or user login).
    * Use this for admin operations that require JWT auth mode.
    */
-  setJwtToken(token: string, expiresIn?: number): void {
+  setJwtToken(
+    token: string,
+    expiresIn?: number,
+    renewFn?: () => Promise<{ token: string; expiresIn: number }>
+  ): void {
     this._authState.setAuth(
       { mode: "jwt", token },
       expiresIn
     );
+    if (renewFn) {
+      this._authState.setRenewFn(async () => {
+        const result = await renewFn();
+        return {
+          auth: { mode: "jwt" as const, token: result.token },
+          expiresIn: result.expiresIn,
+        };
+      });
+    }
   }
 
   get isAuthenticated(): boolean {

@@ -7,10 +7,15 @@ export interface LoginResponse {
   tokenType: string;
 }
 
+export interface RenewResult {
+  auth: AuthConfig;
+  expiresIn: number;
+}
+
 export class AuthState {
   private _auth: AuthConfig | null = null;
   private _expiresAt: number | null = null;
-  private _loginFn: (() => Promise<LoginResponse>) | null = null;
+  private _renewFn: (() => Promise<RenewResult>) | null = null;
   private _renewPromise: Promise<void> | null = null;
 
   setAuth(auth: AuthConfig, expiresIn?: number): void {
@@ -21,12 +26,12 @@ export class AuthState {
   clearAuth(): void {
     this._auth = null;
     this._expiresAt = null;
-    this._loginFn = null;
+    this._renewFn = null;
     this._renewPromise = null;
   }
 
-  setRenewFn(fn: () => Promise<LoginResponse>): void {
-    this._loginFn = fn;
+  setRenewFn(fn: () => Promise<RenewResult>): void {
+    this._renewFn = fn;
   }
 
   get current(): AuthConfig | null {
@@ -43,7 +48,7 @@ export class AuthState {
 
   async ensureValid(): Promise<void> {
     if (!this._auth) return;
-    if (this._expiresAt === null || this._loginFn === null) return;
+    if (this._expiresAt === null || this._renewFn === null) return;
 
     if (Date.now() >= this._expiresAt - 30_000) {
       if (this._renewPromise) {
@@ -61,10 +66,7 @@ export class AuthState {
   }
 
   private async _renew(): Promise<void> {
-    const response = await this._loginFn!();
-    this.setAuth(
-      { mode: "identityAccessToken", accessToken: response.accessToken },
-      response.expiresIn
-    );
+    const result = await this._renewFn!();
+    this.setAuth(result.auth, result.expiresIn);
   }
 }

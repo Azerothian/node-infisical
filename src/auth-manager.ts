@@ -69,7 +69,13 @@ export class AuthManager {
       { mode: "identityAccessToken", accessToken: response.accessToken },
       response.expiresIn
     );
-    this.authState.setRenewFn(() => this.resolveLoginFn(params)());
+    this.authState.setRenewFn(async () => {
+      const response = await this.resolveLoginFn(params)();
+      return {
+        auth: { mode: "identityAccessToken" as const, accessToken: response.accessToken },
+        expiresIn: response.expiresIn,
+      };
+    });
     return response;
   }
 
