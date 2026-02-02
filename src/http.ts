@@ -161,6 +161,78 @@ export class HttpClient {
     const requestId = response.headers.get("x-request-id") ?? undefined;
 
     if (!response.ok) {
+      // On 401, attempt to re-login and retry once
+      if (
+        response.status === 401 &&
+        !options?.skipAuth &&
+        this.config.authState.canRenew
+      ) {
+        await this.config.authState.forceRenew();
+
+        const retryHeaders: Record<string, string> = {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          ...(this.config.authState.current ? getAuthHeader(this.config.authState.current) : {}),
+          ...this.config.headers,
+          ...options?.headers,
+        };
+
+        const retryController = new AbortController();
+        const retryTimeoutId = setTimeout(
+          () => retryController.abort(),
+          this.config.timeout
+        );
+
+        let retryResponse: Response;
+        try {
+          retryResponse = await this.config.fetch(url, {
+            method,
+            headers: retryHeaders,
+            body:
+              options?.body !== undefined
+                ? JSON.stringify(options.body)
+                : undefined,
+            signal: retryController.signal,
+          });
+        } catch (error: unknown) {
+          if (isAbortError(error)) {
+            throw new InfisicalNetworkError(
+              `Request timed out after ${this.config.timeout}ms`,
+              { cause: error as Error }
+            );
+          }
+          throw new InfisicalNetworkError("Network request failed", {
+            cause: error instanceof Error ? error : new Error(String(error)),
+          });
+        } finally {
+          clearTimeout(retryTimeoutId);
+        }
+
+        const retryRequestId =
+          retryResponse.headers.get("x-request-id") ?? undefined;
+
+        if (!retryResponse.ok) {
+          let retryBody: Record<string, unknown> | null = null;
+          try {
+            retryBody = (await retryResponse.json()) as Record<string, unknown>;
+          } catch {
+            const text = await retryResponse
+              .text()
+              .catch(() => "Unknown error");
+            retryBody = { message: text };
+          }
+          throw createApiError(retryResponse.status, retryBody, retryRequestId);
+        }
+
+        if (retryResponse.status === 204) {
+          return undefined as T;
+        }
+
+        const retryText = await retryResponse.text();
+        if (!retryText) return undefined as T;
+        return JSON.parse(retryText) as T;
+      }
+
       let body: Record<string, unknown> | null = null;
       try {
         body = (await response.json()) as Record<string, unknown>;

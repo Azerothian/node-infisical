@@ -46,6 +46,26 @@ export class AuthState {
     return this._auth?.mode ?? null;
   }
 
+  get canRenew(): boolean {
+    return this._renewFn !== null;
+  }
+
+  async forceRenew(): Promise<void> {
+    if (!this._renewFn) return;
+
+    if (this._renewPromise) {
+      await this._renewPromise;
+      return;
+    }
+
+    this._renewPromise = this._renew();
+    try {
+      await this._renewPromise;
+    } finally {
+      this._renewPromise = null;
+    }
+  }
+
   async ensureValid(): Promise<void> {
     if (!this._auth) return;
     if (this._expiresAt === null || this._renewFn === null) return;

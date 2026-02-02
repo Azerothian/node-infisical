@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { HttpClient } from "../src/http";
 import { AuthState } from "../src/auth-state";
 import type { AuthConfig } from "../src/types/auth";
@@ -240,6 +240,110 @@ describe("HttpClient", () => {
 
       expect(calls[0].url).toContain("?q=val");
       expect(calls[0].init.body).toBe(JSON.stringify({ data: 1 }));
+    });
+  });
+
+  describe("401 retry with re-login", () => {
+    it("retries request after re-login on 401 when renewFn is available", async () => {
+      const { mockFetch, calls } = createMockFetch([
+        { status: 401, body: { message: "token expired" } },
+        { status: 200, body: { data: "success" } },
+      ]);
+
+      const authState = new AuthState();
+      authState.setAuth({ mode: "identityAccessToken", accessToken: "expired-token" });
+      authState.setRenewFn(async () => ({
+        auth: { mode: "identityAccessToken" as const, accessToken: "fresh-token" },
+        expiresIn: 7200,
+      }));
+
+      const client = new HttpClient({
+        baseUrl: "https://app.infisical.com",
+        authState,
+        fetch: mockFetch as unknown as typeof globalThis.fetch,
+        timeout: 5000,
+      });
+
+      const result = await client.get<{ data: string }>("/secrets");
+
+      expect(result).toEqual({ data: "success" });
+      expect(calls).toHaveLength(2);
+      // First call used expired token
+      expect((calls[0].init.headers as Record<string, string>)["Authorization"]).toBe(
+        "Bearer expired-token"
+      );
+      // Retry used fresh token from renewFn
+      expect((calls[1].init.headers as Record<string, string>)["Authorization"]).toBe(
+        "Bearer fresh-token"
+      );
+    });
+
+    it("throws UnauthorizedError if retry also returns 401", async () => {
+      const { mockFetch } = createMockFetch([
+        { status: 401, body: { message: "token expired" } },
+        { status: 401, body: { message: "still unauthorized" } },
+      ]);
+
+      const authState = new AuthState();
+      authState.setAuth({ mode: "identityAccessToken", accessToken: "bad-token" });
+      authState.setRenewFn(async () => ({
+        auth: { mode: "identityAccessToken" as const, accessToken: "also-bad-token" },
+        expiresIn: 7200,
+      }));
+
+      const client = new HttpClient({
+        baseUrl: "https://app.infisical.com",
+        authState,
+        fetch: mockFetch as unknown as typeof globalThis.fetch,
+        timeout: 5000,
+      });
+
+      await expect(client.get("/secrets")).rejects.toThrow(UnauthorizedError);
+    });
+
+    it("does not retry on 401 when no renewFn is set", async () => {
+      const { mockFetch, calls } = createMockFetch([
+        { status: 401, body: { message: "unauthorized" } },
+      ]);
+
+      const authState = new AuthState();
+      authState.setAuth({ mode: "identityAccessToken", accessToken: "token" });
+      // No renewFn set
+
+      const client = new HttpClient({
+        baseUrl: "https://app.infisical.com",
+        authState,
+        fetch: mockFetch as unknown as typeof globalThis.fetch,
+        timeout: 5000,
+      });
+
+      await expect(client.get("/secrets")).rejects.toThrow(UnauthorizedError);
+      expect(calls).toHaveLength(1);
+    });
+
+    it("does not retry on 401 for postNoAuth requests", async () => {
+      const { mockFetch, calls } = createMockFetch([
+        { status: 401, body: { message: "bad credentials" } },
+      ]);
+
+      const authState = new AuthState();
+      authState.setAuth({ mode: "identityAccessToken", accessToken: "token" });
+      authState.setRenewFn(async () => ({
+        auth: { mode: "identityAccessToken" as const, accessToken: "fresh" },
+        expiresIn: 7200,
+      }));
+
+      const client = new HttpClient({
+        baseUrl: "https://app.infisical.com",
+        authState,
+        fetch: mockFetch as unknown as typeof globalThis.fetch,
+        timeout: 5000,
+      });
+
+      await expect(
+        client.postNoAuth("/api/v1/auth/login", { bad: "creds" })
+      ).rejects.toThrow(UnauthorizedError);
+      expect(calls).toHaveLength(1);
     });
   });
 });

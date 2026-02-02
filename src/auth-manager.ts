@@ -38,6 +38,8 @@ export type LoginParams =
   | { ociAuth: LoginOciAuthParams }
   | { alicloudAuth: LoginAlicloudAuthParams };
 
+export type LoginParamsOrFactory = LoginParams | (() => Promise<LoginParams> | LoginParams);
+
 export interface IdentityAuthResources {
   universal: IdentityUniversalAuthResource;
   token: IdentityTokenAuthResource;
@@ -62,15 +64,17 @@ export class AuthManager {
     this.resources = resources;
   }
 
-  async login(params: LoginParams): Promise<LoginResponse> {
-    const loginFn = this.resolveLoginFn(params);
+  async login(params: LoginParams | (() => Promise<LoginParams> | LoginParams)): Promise<LoginResponse> {
+    const resolvedParams = typeof params === 'function' ? await params() : params;
+    const loginFn = this.resolveLoginFn(resolvedParams);
     const response = await loginFn();
     this.authState.setAuth(
       { mode: "identityAccessToken", accessToken: response.accessToken },
       response.expiresIn
     );
     this.authState.setRenewFn(async () => {
-      const response = await this.resolveLoginFn(params)();
+      const renewParams = typeof params === 'function' ? await params() : params;
+      const response = await this.resolveLoginFn(renewParams)();
       return {
         auth: { mode: "identityAccessToken" as const, accessToken: response.accessToken },
         expiresIn: response.expiresIn,

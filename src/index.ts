@@ -17,7 +17,7 @@ export {
 export { AuthState } from "./auth-state";
 export type { LoginResponse, RenewResult } from "./auth-state";
 export { AuthManager } from "./auth-manager";
-export type { LoginParams, IdentityAuthResources } from "./auth-manager";
+export type { LoginParams, LoginParamsOrFactory, IdentityAuthResources } from "./auth-manager";
 export * from "./types";
 export { MfaResource } from "./resources/mfa";
 export { MfaSessionsResource } from "./resources/mfa-sessions";

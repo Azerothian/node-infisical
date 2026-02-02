@@ -4,7 +4,7 @@ import type { FetchFunction } from "./http";
 import { AuthState } from "./auth-state";
 import type { LoginResponse } from "./auth-state";
 import { AuthManager } from "./auth-manager";
-import type { LoginParams } from "./auth-manager";
+import type { LoginParams, LoginParamsOrFactory } from "./auth-manager";
 import type { AuthMode } from "./types/auth-modes";
 import { MfaResource } from "./resources/mfa";
 import { MfaSessionsResource } from "./resources/mfa-sessions";
@@ -160,7 +160,7 @@ export class InfisicalClient {
     this.orgAdmin = new OrgAdminResource(http, as);
   }
 
-  async login(params: LoginParams): Promise<LoginResponse> {
+  async login(params: LoginParamsOrFactory): Promise<LoginResponse> {
     return this._authManager.login(params);
   }
 

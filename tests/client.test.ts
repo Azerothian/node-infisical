@@ -165,4 +165,96 @@ describe("InfisicalClient", () => {
     expect(renewFn).not.toHaveBeenCalled();
     expect(authState.current).toEqual({ mode: "jwt", token: "my-jwt" });
   });
+
+  it("auto-renews via login factory function with fresh credentials", async () => {
+    vi.useFakeTimers();
+    try {
+      const mockResponse = {
+        accessToken: "fresh-token",
+        expiresIn: 1,
+        accessTokenMaxTTL: 86400,
+        tokenType: "Bearer",
+      };
+
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Map(),
+        text: () => Promise.resolve(JSON.stringify(mockResponse)),
+      } as any);
+
+      const client = new InfisicalClient({
+        baseUrl: "https://test.example.com",
+        fetch: mockFetch as any,
+      });
+
+      const factory = vi.fn().mockResolvedValue({
+        universalAuth: { clientId: "cid", clientSecret: "csec" },
+      });
+
+      await client.login(factory);
+
+      expect(factory).toHaveBeenCalledTimes(1);
+      expect(client.isAuthenticated).toBe(true);
+
+      // Token expires in 1s, renewal triggers 30s before, so it triggers immediately
+      const authState = (client as any)._authState;
+      await authState.ensureValid();
+
+      expect(factory).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("login factory function provides fresh params on each renewal", async () => {
+    vi.useFakeTimers();
+    try {
+      let callCount = 0;
+      const mockFetch = vi.fn().mockImplementation(async (url: string, init: any) => {
+        const body = JSON.parse(init.body);
+        return {
+          ok: true,
+          status: 200,
+          headers: new Map(),
+          text: () => Promise.resolve(JSON.stringify({
+            accessToken: `token-${body.clientId}`,
+            expiresIn: 1,
+            accessTokenMaxTTL: 86400,
+            tokenType: "Bearer",
+          })),
+        };
+      });
+
+      const client = new InfisicalClient({
+        baseUrl: "https://test.example.com",
+        fetch: mockFetch as any,
+      });
+
+      const factory = vi.fn().mockImplementation(async () => {
+        callCount++;
+        return {
+          universalAuth: { clientId: `cid-${callCount}`, clientSecret: "csec" },
+        };
+      });
+
+      await client.login(factory);
+
+      // First call used cid-1
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const firstBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(firstBody.clientId).toBe("cid-1");
+
+      // Trigger renewal
+      const authState = (client as any)._authState;
+      await authState.ensureValid();
+
+      // Second call used cid-2 (fresh from factory)
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      const secondBody = JSON.parse(mockFetch.mock.calls[1][1].body);
+      expect(secondBody.clientId).toBe("cid-2");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
